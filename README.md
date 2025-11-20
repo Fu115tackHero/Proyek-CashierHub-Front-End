@@ -1,11 +1,6 @@
+KELOMPOK GPT PRO:
 
-  # Create Full Page Code
-
-  This is a code bundle for Create Full Page Code. The original project is available at https://www.figma.com/design/Fk1C2Q7towv9Z5zhXAjckq/Create-Full-Page-Code.
-
-  ## Running the code
-
-  Run `npm i` to install the dependencies.
-
-  Run `npm run dev` to start the development server.
+1. Alfiyana Fadillah Ashary	(241401024)
+2. EL FAHREZA SUFI (241401042)
+3. Cristoval Pratama Siahaan (241401057)
   
