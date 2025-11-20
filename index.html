@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CashierHub - Internal Retail Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Barcode & QR Code Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+      /* Scanner Animation - Optimized for smooth 60fps */
+      @keyframes scannerLine {
+        0% {
+          top: 0%;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          top: calc(100% - 4px);
+        }
+      }
+
+      .scanner-line {
+        animation: scannerLine 2s infinite ease-in-out;
+        will-change: top;
+        backface-visibility: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .scanner-corner {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(34, 197, 94, 0.7);
+      }
+
+      .scanner-corner-tl {
+        top: 0;
+        left: 0;
+        border-right: none;
+        border-bottom: none;
+      }
+
+      .scanner-corner-tr {
+        top: 0;
+        right: 0;
+        border-left: none;
+        border-bottom: none;
+      }
+
+      .scanner-corner-bl {
+        bottom: 0;
+        left: 0;
+        border-right: none;
+        border-top: none;
+      }
+
+      .scanner-corner-br {
+        bottom: 0;
+        right: 0;
+        border-left: none;
+        border-top: none;
+      }
+
+      /* Print Styles for Receipt */
+      @media print {
+        @page {
+          size: 72mm auto;
+          margin: 0;
+        }
+
+        html,
+        body {
+          width: 72mm !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+        }
+
+        body * {
+          visibility: hidden !important;
+        }
+
+        .struk-wrapper {
+          position: static !important;
+          visibility: visible !important;
+          display: block !important;
+          width: 72mm !important;
+          max-width: 72mm !important;
+          padding: 5mm !important;
+          background: white !important;
+          margin: 0 !important;
+          page-break-after: avoid !important;
+          page-break-inside: avoid !important;
+        }
+
+        .struk-wrapper * {
+          visibility: visible !important;
+        }
+
+        .struk-wrapper img {
+          display: block !important;
+          visibility: visible !important;
+          max-width: 100% !important;
+          height: auto !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        .struk-wrapper table {
+          display: table !important;
+          width: 100% !important;
+          border-collapse: collapse !important;
+        }
+
+        .struk-wrapper thead {
+          display: table-header-group !important;
+        }
+
+        .struk-wrapper tbody {
+          display: table-row-group !important;
+        }
+
+        .struk-wrapper tr {
+          display: table-row !important;
+          page-break-inside: avoid !important;
+        }
+
+        .struk-wrapper td,
+        .struk-wrapper th {
+          display: table-cell !important;
+          padding: 2px 4px !important;
+        }
+
+        .struk-wrapper h1,
+        .struk-wrapper h2,
+        .struk-wrapper h3,
+        .struk-wrapper p,
+        .struk-wrapper div,
+        .struk-wrapper span {
+          display: block !important;
+          visibility: visible !important;
+        }
+
+        .no-print,
+        .no-print * {
+          display: none !important;
+          visibility: hidden !important;
+        }
+      }
+
+      /* Animation utilities */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+      }
+
+      .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .animate-shake {
+        animation: shake 0.3s ease-in-out;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
