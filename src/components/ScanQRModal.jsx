@@ -28,7 +28,7 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
 
       const config = {
         fps: 10,
-        qrbox: { width: 250, height: 250 },
+        qrbox: { width: 200, height: 200 },
         aspectRatio: 1.0,
       };
 
@@ -79,7 +79,7 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
       ></div>
 
       {/* Modal - Above backdrop, below cart */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col z-10">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col z-10">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="text-xl font-bold">Scan QR Code / Barcode</h2>
@@ -99,7 +99,7 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
               <div
                 id="qr-reader"
                 className="rounded-lg overflow-hidden relative"
-                style={{ minHeight: scanning ? "300px" : "0px" }}
+                style={{ minHeight: scanning ? "240px" : "0px" }}
               >
                 {/* Scanner Line Animation - hanya tampil saat scanning */}
                 {scanning && (
