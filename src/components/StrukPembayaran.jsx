@@ -25,7 +25,7 @@ export const StrukPembayaran = ({
           <title>Struk Pembayaran</title>
           <style>
             @page {
-              size: 72mm auto;
+              size: 90mm auto;
               margin: 0;
             }
             
@@ -37,7 +37,7 @@ export const StrukPembayaran = ({
             
             body {
               font-family: 'Courier New', monospace;
-              width: 72mm;
+              width: 90mm;
               margin: 0 auto;
               padding: 5mm;
               background: white;
@@ -59,18 +59,35 @@ export const StrukPembayaran = ({
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 8px;
+              table-layout: fixed;
             }
+            
+            colgroup col:nth-child(1) { width: 45%; }
+            colgroup col:nth-child(2) { width: 10%; }
+            colgroup col:nth-child(3) { width: 20%; }
+            colgroup col:nth-child(4) { width: 25%; }
             
             th, td {
               text-align: left;
-              padding: 4px 0;
+              padding: 4px 2px;
               font-size: 10px;
+              white-space: nowrap;
             }
             
             th {
               border-bottom: 1px solid #333;
               font-weight: bold;
             }
+            
+            th:first-child { padding-left: 0; padding-right: 2px; }
+            th:last-child { padding-right: 0; padding-left: 2px; }
+            td:first-child { 
+              padding-left: 0; 
+              padding-right: 2px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            td:last-child { padding-right: 0; padding-left: 2px; }
             
             .text-right { text-align: right; }
             
@@ -122,7 +139,7 @@ export const StrukPembayaran = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
         className="bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col"
-        style={{ maxWidth: "500px", maxHeight: "90vh" }}
+        style={{ maxWidth: "600px", maxHeight: "90vh" }}
       >
         <div className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] p-4 text-white flex items-center justify-between flex-shrink-0">
           <h2 className="text-xl font-bold">Struk Pembayaran</h2>
@@ -140,7 +157,7 @@ export const StrukPembayaran = ({
             ref={printContentRef}
             className="p-6 bg-white mx-auto"
             style={{
-              width: "72mm",
+              width: "90mm",
               fontFamily: "'Courier New', monospace",
             }}
           >
@@ -197,14 +214,21 @@ export const StrukPembayaran = ({
                 width: "100%",
                 borderCollapse: "collapse",
                 marginBottom: "8px",
+                tableLayout: "fixed",
               }}
             >
+              <colgroup>
+                <col style={{ width: "45%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "25%" }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th
                     style={{
                       textAlign: "left",
-                      padding: "4px 0",
+                      padding: "4px 2px 4px 0",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -215,7 +239,7 @@ export const StrukPembayaran = ({
                   <th
                     style={{
                       textAlign: "right",
-                      padding: "4px 0",
+                      padding: "4px 2px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -226,7 +250,7 @@ export const StrukPembayaran = ({
                   <th
                     style={{
                       textAlign: "right",
-                      padding: "4px 0",
+                      padding: "4px 2px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -237,7 +261,7 @@ export const StrukPembayaran = ({
                   <th
                     style={{
                       textAlign: "right",
-                      padding: "4px 0",
+                      padding: "4px 0 4px 2px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -251,14 +275,23 @@ export const StrukPembayaran = ({
                 {items &&
                   items.map((item, index) => (
                     <tr key={index}>
-                      <td style={{ fontSize: "10px", padding: "4px 0" }}>
+                      <td 
+                        style={{ 
+                          fontSize: "10px", 
+                          padding: "4px 2px 4px 0",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
                         {item.nama}
                       </td>
                       <td
                         style={{
                           textAlign: "right",
                           fontSize: "10px",
-                          padding: "4px 0",
+                          padding: "4px 2px",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {item.quantity}
@@ -267,7 +300,8 @@ export const StrukPembayaran = ({
                         style={{
                           textAlign: "right",
                           fontSize: "10px",
-                          padding: "4px 0",
+                          padding: "4px 2px",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {item.harga.toLocaleString("id-ID")},00
@@ -277,12 +311,11 @@ export const StrukPembayaran = ({
                           textAlign: "right",
                           fontSize: "10px",
                           fontWeight: "bold",
-                          padding: "4px 0",
+                          padding: "4px 0 4px 2px",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        Rp{" "}
-                        {(item.harga * item.quantity).toLocaleString("id-ID")}
-                        ,00
+                        Rp{" "}{(item.harga * item.quantity).toLocaleString("id-ID")},00
                       </td>
                     </tr>
                   ))}
