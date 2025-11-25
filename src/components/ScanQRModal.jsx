@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { FaQrcode, FaTimes } from "react-icons/fa";
 
@@ -7,20 +7,14 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
   const [scannedData, setScannedData] = useState(null);
   const [error, setError] = useState(null);
   const html5QrCodeRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-  const stopScanning = useCallback(async () => {
+  const startScanning = async () => {
     try {
-      if (html5QrCodeRef.current && scanning) {
-        await html5QrCodeRef.current.stop();
-        setScanning(false);
+      if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode("qr-reader");
       }
-    } catch (err) {
-      console.error("Error stopping scanner:", err);
-    }
-  }, [scanning]);
 
-  const startScanning = useCallback(async () => {
-    try {
       setError(null);
       setScanning(true);
 
@@ -34,8 +28,13 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
         { facingMode: "environment" },
         config,
         (decodedText) => {
+          if (!isMountedRef.current) return;
           setScannedData(decodedText);
-          stopScanning();
+          // Stop scanning after successful scan
+          if (html5QrCodeRef.current) {
+            html5QrCodeRef.current.stop().catch(() => {});
+            setScanning(false);
+          }
           if (onScanSuccess) {
             onScanSuccess(decodedText);
           }
@@ -45,33 +44,63 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
         }
       );
     } catch {
-      setError("Gagal mengakses kamera. Pastikan izin kamera diaktifkan.");
+      if (isMountedRef.current) {
+        setError("Gagal mengakses kamera. Pastikan izin kamera diaktifkan.");
+        setScanning(false);
+      }
+    }
+  };
+
+  const stopScanning = async () => {
+    try {
+      if (html5QrCodeRef.current) {
+        const state = html5QrCodeRef.current.getState();
+        // Only stop if scanner is actually scanning (state 2 = SCANNING)
+        if (state === 2) {
+          await html5QrCodeRef.current.stop();
+        }
+        setScanning(false);
+      }
+    } catch {
+      // Ignore errors, just set scanning to false
       setScanning(false);
     }
-  }, [onScanSuccess, stopScanning]);
+  };
 
   useEffect(() => {
-    let mounted = true;
+    isMountedRef.current = true;
+    let cleanupExecuted = false;
 
+    // Auto-start scanning when modal opens
     const initScanner = async () => {
-      if (!html5QrCodeRef.current) {
-        html5QrCodeRef.current = new Html5Qrcode("qr-reader");
-      }
-      if (mounted) {
-        await startScanning();
-      }
+      await startScanning();
     };
 
     initScanner();
 
     return () => {
-      mounted = false;
-      stopScanning();
-    };
-  }, [startScanning, stopScanning]);
+      if (cleanupExecuted) return;
+      cleanupExecuted = true;
+      isMountedRef.current = false;
 
-  const handleClose = () => {
-    stopScanning();
+      // Cleanup scanner safely
+      if (html5QrCodeRef.current) {
+        try {
+          const state = html5QrCodeRef.current.getState();
+          // Only stop if scanning (state 2 = SCANNING)
+          if (state === 2) {
+            html5QrCodeRef.current.stop().catch(() => {});
+          }
+        } catch {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleClose = async () => {
+    await stopScanning();
     setScannedData(null);
     setError(null);
     onClose();
