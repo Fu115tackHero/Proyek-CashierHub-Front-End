@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
 import { dashboardSvgPaths, karyawanSvgPaths } from "../assets/svg-paths";
@@ -62,7 +62,7 @@ const TicketIcon = () => (
   </svg>
 );
 
-const ManagerSidebar = ({ onLogout }) => {
+const ManagerSidebar = () => {
   const navigate = useNavigate();
 
   return (

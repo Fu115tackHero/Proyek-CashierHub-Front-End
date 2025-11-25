@@ -1,28 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
-import { dashboardSvgPaths, profileSvgPaths } from "../assets/svg-paths";
-
-const UserProfileIcon = () => (
-  <div className="h-[309px] overflow-clip relative shrink-0 w-full">
-    <div className="absolute inset-[8.33%]">
-      <svg
-        className="block size-full"
-        fill="none"
-        preserveAspectRatio="none"
-        viewBox="0 0 258 258"
-      >
-        <path
-          clipRule="evenodd"
-          d={profileSvgPaths.pcbca680}
-          fill="black"
-          fillRule="evenodd"
-        />
-      </svg>
-    </div>
-  </div>
-);
+import { profileSvgPaths } from "../assets/svg-paths";
 
 export default function ProfilePage() {
   const navigate = useNavigate();

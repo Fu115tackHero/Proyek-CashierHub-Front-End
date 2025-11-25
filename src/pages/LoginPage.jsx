@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgImage2 from "figma:asset/267f62b7f53369d61a610b218f5c7653c8862403.png";
 

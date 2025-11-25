@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaTimes, FaBarcode, FaQrcode, FaDownload } from "react-icons/fa";
 
 export const BarcodeQRModal = ({ onClose, product }) => {

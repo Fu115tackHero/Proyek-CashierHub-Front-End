@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const getUserFromStorage = () => {
+  const userStr = localStorage.getItem("user");
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      return {
+        username: user.name || user.username || "User",
+        role: user.role || "",
+      };
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }
+  return { username: "User", role: "" };
+};
 
 export const Header = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("User");
-  const [role, setRole] = useState("");
-
-  useEffect(() => {
-    // Get user data from localStorage
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setUsername(user.name || user.username || "User");
-        setRole(user.role || "");
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-      }
-    }
-  }, []);
+  const [username] = useState(() => getUserFromStorage().username);
+  const [role] = useState(() => getUserFromStorage().role);
 
   const handleProfileClick = () => {
     navigate("/profile");

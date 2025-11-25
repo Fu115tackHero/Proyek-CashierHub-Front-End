@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   FaMoneyBillWave,
   FaTimes,
@@ -11,13 +11,6 @@ export const PaymentModal = ({ total, onClose, onSuccess }) => {
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [change, setChange] = useState(0);
-
-  useEffect(() => {
-    setCashAmount("");
-    setShowError(false);
-    setShowSuccess(false);
-    setChange(0);
-  }, []);
 
   const handleCashChange = (e) => {
     const value = e.target.value.replace(/\D/g, "");

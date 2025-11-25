@@ -1,39 +1,29 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "./Modal";
 import { FaBox, FaBarcode, FaDollarSign, FaCubes } from "react-icons/fa";
 
-export const ProductModal = ({ onClose, onSave, product = null }) => {
-  const mode = product ? "edit" : "add";
-  const [formData, setFormData] = useState({
+const getInitialFormData = (product) => {
+  if (product) {
+    return {
+      nama: product.nama || "",
+      merek: product.merek || "",
+      kode: product.kode || "",
+      stok: product.stok?.toString() || "",
+      harga: product.harga?.toString() || "",
+    };
+  }
+  return {
     nama: "",
     merek: "",
     kode: "",
     stok: "",
     harga: "",
-  });
+  };
+};
 
+export const ProductModal = ({ onClose, onSave, product = null }) => {
+  const [formData, setFormData] = useState(() => getInitialFormData(product));
   const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        nama: product.nama || "",
-        merek: product.merek || "",
-        kode: product.kode || "",
-        stok: product.stok?.toString() || "",
-        harga: product.harga?.toString() || "",
-      });
-    } else {
-      setFormData({
-        nama: "",
-        merek: "",
-        kode: "",
-        stok: "",
-        harga: "",
-      });
-    }
-    setErrors({});
-  }, [product]);
 
   const validateForm = () => {
     const newErrors = {};

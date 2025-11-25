@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { FaTimes, FaPrint } from "react-icons/fa";
 import imgLogo from "figma:asset/91293b9b3a4aed9fdd1e62c0fc9c74efae4bcd9b.png";
 
@@ -275,9 +275,9 @@ export const StrukPembayaran = ({
                 {items &&
                   items.map((item, index) => (
                     <tr key={index}>
-                      <td 
-                        style={{ 
-                          fontSize: "10px", 
+                      <td
+                        style={{
+                          fontSize: "10px",
                           padding: "4px 2px 4px 0",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -315,7 +315,9 @@ export const StrukPembayaran = ({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        Rp{" "}{(item.harga * item.quantity).toLocaleString("id-ID")},00
+                        Rp{" "}
+                        {(item.harga * item.quantity).toLocaleString("id-ID")}
+                        ,00
                       </td>
                     </tr>
                   ))}

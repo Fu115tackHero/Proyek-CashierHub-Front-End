@@ -6,18 +6,20 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   { ignores: ["dist"] }, // Folder build akan diabaikan
+
+  // --- KONFIGURASI UNTUK FILE REACT (Browser) ---
   {
-    files: ["**/*.{js,jsx}"], // Cek semua file JS dan JSX
+    files: ["**/*.{js,jsx}"], // Cek semua file JS dan JSX di src
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: globals.browser, // Set global variabel browser (window, document, dll)
       parserOptions: {
         ecmaVersion: "latest",
         ecmaFeatures: { jsx: true },
         sourceType: "module",
       },
     },
-    settings: { react: { version: "18.3" } }, // Sesuaikan versi React
+    settings: { react: { version: "18.3" } },
     plugins: {
       react,
       "react-hooks": reactHooks,
@@ -33,8 +35,18 @@ export default [
         "warn",
         { allowConstantExport: true },
       ],
-      // Kamu bisa nambah aturan custom di sini, contoh:
-      // 'no-unused-vars': 'warn',
+
+      // 👇 TAMBAHAN 1: Matikan aturan Prop Types biar ga rewel minta validasi
+      "react/prop-types": "off",
+    },
+  },
+
+  // 👇 TAMBAHAN 2: Konfigurasi Khusus untuk file Config (Node.js)
+  // Ini untuk mengatasi error "module is not defined" di postcss.config.js, tailwind.config.js, dll.
+  {
+    files: ["*.config.js", ".eslintrc.cjs"],
+    languageOptions: {
+      globals: globals.node, // Set global variabel Node (module, require, process, dll)
     },
   },
 ];

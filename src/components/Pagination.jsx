@@ -1,5 +1,3 @@
-import React from "react";
-
 const PageButton = ({ active, children, onClick, disabled }) => (
   <button
     onClick={onClick}

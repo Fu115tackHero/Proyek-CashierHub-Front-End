@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "./Modal";
 import {
   FaUser,
@@ -10,40 +10,27 @@ import {
 } from "react-icons/fa";
 
 export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
-  const mode = employee ? "edit" : "add";
-  const [formData, setFormData] = useState({
-    nama: "",
-    email: "",
-    telepon: "",
-    alamat: "",
-    posisi: "Kasir",
-    password: "",
-  });
-
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (employee) {
-      setFormData({
+  // Initialize form data from employee prop
+  const initialFormData = employee
+    ? {
         nama: employee.nama || "",
         email: employee.email || "",
         telepon: employee.telepon || "",
         alamat: employee.alamat || "",
         posisi: employee.posisi || "Kasir",
         password: "", // Don't pre-fill password for edit
-      });
-    } else {
-      setFormData({
+      }
+    : {
         nama: "",
         email: "",
         telepon: "",
         alamat: "",
         posisi: "Kasir",
         password: "",
-      });
-    }
-    setErrors({});
-  }, [employee]);
+      };
+
+  const [formData, setFormData] = useState(initialFormData);
+  const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
