@@ -7,7 +7,9 @@ export const BarcodeQRModal = ({ onClose, product }) => {
   const qrcodeRef = useRef(null);
 
   useEffect(() => {
-    if (product) {
+    if (product && product.kode) {
+      const kodeString = String(product.kode);
+
       if (activeTab === "barcode" && barcodeRef.current && window.JsBarcode) {
         try {
           barcodeRef.current.innerHTML = "";
@@ -17,7 +19,7 @@ export const BarcodeQRModal = ({ onClose, product }) => {
           );
           barcodeRef.current.appendChild(svg);
 
-          window.JsBarcode(svg, product.kode, {
+          window.JsBarcode(svg, kodeString, {
             format: "CODE128",
             width: 2,
             height: 60,
@@ -34,7 +36,7 @@ export const BarcodeQRModal = ({ onClose, product }) => {
         try {
           qrcodeRef.current.innerHTML = "";
           new window.QRCode(qrcodeRef.current, {
-            text: product.kode,
+            text: kodeString,
             width: 200,
             height: 200,
             colorDark: "#1a509a",

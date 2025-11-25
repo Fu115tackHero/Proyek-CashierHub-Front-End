@@ -32,6 +32,23 @@ export const Sidebar = ({ onLogout }) => {
   const location = useLocation();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // Get user role from localStorage
+  const getUserRole = () => {
+    try {
+      const user = localStorage.getItem("user");
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.role || "Kasir"; // Default to Kasir if no role
+      }
+    } catch (error) {
+      console.error("Error reading user role:", error);
+    }
+    return "Kasir";
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "Admin";
+
   const handleLogoutClick = (e) => {
     e.preventDefault();
     setShowLogoutModal(true);
@@ -73,37 +90,43 @@ export const Sidebar = ({ onLogout }) => {
               />
             </div>
 
-            <div className="mb-2">
-              <p className="text-blue-200 text-xs font-semibold px-3 mb-2 uppercase tracking-wider">
-                Manajemen
-              </p>
-              <div className="space-y-1">
+            {/* Menu Manajemen - Only for Admin */}
+            {isAdmin && (
+              <div className="mb-2">
+                <p className="text-blue-200 text-xs font-semibold px-3 mb-2 uppercase tracking-wider">
+                  Manajemen
+                </p>
+                <div className="space-y-1">
+                  <MenuItem
+                    to="/kelola-barang"
+                    label="Kelola Barang"
+                    icon={FaBox}
+                    active={location.pathname === "/kelola-barang"}
+                  />
+                  <MenuItem
+                    to="/kelola-karyawan"
+                    label="Kelola Karyawan"
+                    icon={FaUsers}
+                    active={location.pathname === "/kelola-karyawan"}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Menu Laporan - Only for Admin */}
+            {isAdmin && (
+              <div className="mb-2">
+                <p className="text-blue-200 text-xs font-semibold px-3 mb-2 uppercase tracking-wider">
+                  Laporan
+                </p>
                 <MenuItem
-                  to="/kelola-barang"
-                  label="Kelola Barang"
-                  icon={FaBox}
-                  active={location.pathname === "/kelola-barang"}
-                />
-                <MenuItem
-                  to="/kelola-karyawan"
-                  label="Kelola Karyawan"
-                  icon={FaUsers}
-                  active={location.pathname === "/kelola-karyawan"}
+                  to="/laporan"
+                  label="Laporan Penjualan"
+                  icon={FaChartLine}
+                  active={location.pathname === "/laporan"}
                 />
               </div>
-            </div>
-
-            <div className="mb-2">
-              <p className="text-blue-200 text-xs font-semibold px-3 mb-2 uppercase tracking-wider">
-                Laporan
-              </p>
-              <MenuItem
-                to="/laporan"
-                label="Laporan Penjualan"
-                icon={FaChartLine}
-                active={location.pathname === "/laporan"}
-              />
-            </div>
+            )}
 
             <div className="mt-auto pt-4 border-t border-blue-400 border-opacity-30">
               <MenuItem
