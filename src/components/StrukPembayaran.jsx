@@ -16,7 +16,11 @@ export const StrukPembayaran = ({
 
   const handlePrint = () => {
     const printContent = printContentRef.current.innerHTML;
-    const printWindow = window.open("", "", "width=302,height=600");
+    const printWindow = window.open(
+      "",
+      "",
+      "width=1200,height=800,left=100,top=50"
+    );
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -62,32 +66,56 @@ export const StrukPembayaran = ({
               table-layout: fixed;
             }
             
-            colgroup col:nth-child(1) { width: 45%; }
-            colgroup col:nth-child(2) { width: 10%; }
-            colgroup col:nth-child(3) { width: 20%; }
-            colgroup col:nth-child(4) { width: 25%; }
+            colgroup col:nth-child(1) { width: 40%; }
+            colgroup col:nth-child(2) { width: 12%; }
+            colgroup col:nth-child(3) { width: 24%; }
+            colgroup col:nth-child(4) { width: 24%; }
             
             th, td {
               text-align: left;
-              padding: 4px 2px;
+              padding: 3px 4px;
               font-size: 10px;
-              white-space: nowrap;
+              vertical-align: top;
             }
             
             th {
               border-bottom: 1px solid #333;
               font-weight: bold;
+              padding-bottom: 4px;
             }
             
-            th:first-child { padding-left: 0; padding-right: 2px; }
-            th:last-child { padding-right: 0; padding-left: 2px; }
-            td:first-child { 
-              padding-left: 0; 
-              padding-right: 2px;
-              overflow: hidden;
-              text-overflow: ellipsis;
+            /* Item column - left align, wrap text */
+            th:nth-child(1), td:nth-child(1) { 
+              text-align: left;
+              padding-left: 0;
+              padding-right: 4px;
+              white-space: normal;
+              word-wrap: break-word;
             }
-            td:last-child { padding-right: 0; padding-left: 2px; }
+            
+            /* Qty column - center align */
+            th:nth-child(2), td:nth-child(2) { 
+              text-align: center;
+              padding-left: 4px;
+              padding-right: 4px;
+              white-space: nowrap;
+            }
+            
+            /* Harga column - right align */
+            th:nth-child(3), td:nth-child(3) { 
+              text-align: right;
+              padding-left: 4px;
+              padding-right: 4px;
+              white-space: nowrap;
+            }
+            
+            /* Subtotal column - right align */
+            th:nth-child(4), td:nth-child(4) { 
+              text-align: right;
+              padding-left: 4px;
+              padding-right: 0;
+              white-space: nowrap;
+            }
             
             .text-right { text-align: right; }
             
@@ -218,17 +246,17 @@ export const StrukPembayaran = ({
               }}
             >
               <colgroup>
-                <col style={{ width: "45%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "25%" }} />
+                <col style={{ width: "40%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "24%" }} />
               </colgroup>
               <thead>
                 <tr>
                   <th
                     style={{
                       textAlign: "left",
-                      padding: "4px 2px 4px 0",
+                      padding: "3px 4px 4px 0",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -238,8 +266,8 @@ export const StrukPembayaran = ({
                   </th>
                   <th
                     style={{
-                      textAlign: "right",
-                      padding: "4px 2px",
+                      textAlign: "center",
+                      padding: "3px 4px 4px 4px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -250,7 +278,7 @@ export const StrukPembayaran = ({
                   <th
                     style={{
                       textAlign: "right",
-                      padding: "4px 2px",
+                      padding: "3px 4px 4px 4px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -261,7 +289,7 @@ export const StrukPembayaran = ({
                   <th
                     style={{
                       textAlign: "right",
-                      padding: "4px 0 4px 2px",
+                      padding: "3px 0 4px 4px",
                       fontSize: "10px",
                       borderBottom: "1px solid #333",
                       fontWeight: "bold",
@@ -278,20 +306,22 @@ export const StrukPembayaran = ({
                       <td
                         style={{
                           fontSize: "10px",
-                          padding: "4px 2px 4px 0",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          padding: "3px 4px 3px 0",
+                          textAlign: "left",
+                          whiteSpace: "normal",
+                          wordWrap: "break-word",
+                          verticalAlign: "top",
                         }}
                       >
                         {item.nama}
                       </td>
                       <td
                         style={{
-                          textAlign: "right",
+                          textAlign: "center",
                           fontSize: "10px",
-                          padding: "4px 2px",
+                          padding: "3px 4px",
                           whiteSpace: "nowrap",
+                          verticalAlign: "top",
                         }}
                       >
                         {item.quantity}
@@ -300,24 +330,23 @@ export const StrukPembayaran = ({
                         style={{
                           textAlign: "right",
                           fontSize: "10px",
-                          padding: "4px 2px",
+                          padding: "3px 4px",
                           whiteSpace: "nowrap",
+                          verticalAlign: "top",
                         }}
                       >
-                        {item.harga.toLocaleString("id-ID")},00
+                        {item.harga.toLocaleString("id-ID")}
                       </td>
                       <td
                         style={{
                           textAlign: "right",
                           fontSize: "10px",
-                          fontWeight: "bold",
-                          padding: "4px 0 4px 2px",
+                          padding: "3px 0 3px 4px",
                           whiteSpace: "nowrap",
+                          verticalAlign: "top",
                         }}
                       >
-                        Rp{" "}
                         {(item.harga * item.quantity).toLocaleString("id-ID")}
-                        ,00
                       </td>
                     </tr>
                   ))}
@@ -326,8 +355,6 @@ export const StrukPembayaran = ({
 
             <div
               style={{
-                fontWeight: "bold",
-                fontSize: "11px",
                 borderTop: "2px solid #333",
                 paddingTop: "8px",
                 marginTop: "8px",
@@ -338,11 +365,13 @@ export const StrukPembayaran = ({
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "4px",
+                  fontSize: "11px",
+                  fontWeight: "bold",
                 }}
               >
-                <span style={{ fontSize: "10px" }}>TOTAL:</span>
-                <span style={{ fontSize: "11px" }}>
-                  Rp {total.toLocaleString("id-ID")},00
+                <span>TOTAL:</span>
+                <span style={{ textAlign: "right", minWidth: "80px" }}>
+                  Rp {total.toLocaleString("id-ID")}
                 </span>
               </div>
               <div
@@ -350,17 +379,24 @@ export const StrukPembayaran = ({
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "4px",
+                  fontSize: "10px",
                 }}
               >
-                <span style={{ fontSize: "10px" }}>Tunai:</span>
-                <span style={{ fontSize: "10px" }}>
-                  Rp {cash.toLocaleString("id-ID")},00
+                <span>Tunai:</span>
+                <span style={{ textAlign: "right", minWidth: "80px" }}>
+                  Rp {cash.toLocaleString("id-ID")}
                 </span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "10px" }}>Kembali:</span>
-                <span style={{ fontSize: "10px" }}>
-                  Rp {change.toLocaleString("id-ID")},00
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "10px",
+                }}
+              >
+                <span>Kembali:</span>
+                <span style={{ textAlign: "right", minWidth: "80px" }}>
+                  Rp {change.toLocaleString("id-ID")}
                 </span>
               </div>
             </div>
