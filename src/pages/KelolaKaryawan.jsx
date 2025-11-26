@@ -73,7 +73,7 @@ export default function KelolaKaryawan() {
           ? "Karyawan berhasil diupdate!"
           : "Karyawan berhasil ditambahkan!"
       );
-      
+
       // Update localStorage jika user yang diedit adalah user yang sedang login
       if (editingEmployee && result.data) {
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -91,7 +91,7 @@ export default function KelolaKaryawan() {
           localStorage.setItem("user", JSON.stringify(updatedUser));
         }
       }
-      
+
       setShowEmployeeModal(false);
     } else {
       alert("Gagal menyimpan karyawan: " + result.error);

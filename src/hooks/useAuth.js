@@ -11,11 +11,11 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!storedUser);
 
   const login = async (username, password) => {
-    console.log('=== FRONTEND LOGIN ===');
-    console.log('API Endpoint:', API_ENDPOINTS.LOGIN);
-    console.log('Username:', username);
-    console.log('Password length:', password ? password.length : 0);
-    
+    console.log("=== FRONTEND LOGIN ===");
+    console.log("API Endpoint:", API_ENDPOINTS.LOGIN);
+    console.log("Username:", username);
+    console.log("Password length:", password ? password.length : 0);
+
     try {
       const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: "POST",
@@ -25,9 +25,9 @@ export const useAuth = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      console.log('Response status:', response.status);
+      console.log("Response status:", response.status);
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log("Response data:", data);
 
       if (response.ok && data.success) {
         const userData = {
@@ -40,14 +40,14 @@ export const useAuth = () => {
           role: data.user.role,
           profile_picture: data.user.profile_picture,
         };
-        console.log('Login berhasil, menyimpan user data:', userData);
+        console.log("Login berhasil, menyimpan user data:", userData);
         localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
         setIsAuthenticated(true);
         navigate("/dashboard");
         return { success: true };
       } else {
-        console.log('Login gagal:', data.message);
+        console.log("Login gagal:", data.message);
         return { success: false, message: data.message || "Login gagal" };
       }
     } catch (error) {

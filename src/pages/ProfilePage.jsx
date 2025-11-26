@@ -75,8 +75,8 @@ export default function ProfilePage() {
         payload.password = formData.passwordBaru;
       }
 
-      console.log('Update Profile Payload:', payload);
-      console.log('User ID:', user.id);
+      console.log("Update Profile Payload:", payload);
+      console.log("User ID:", user.id);
 
       const response = await fetch(`${API_ENDPOINTS.USERS}/${user.id}`, {
         method: "PUT",
@@ -88,13 +88,13 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Update failed:', errorData);
+        console.error("Update failed:", errorData);
         throw new Error(errorData.message || "Gagal mengupdate profil");
       }
 
       const result = await response.json();
-      console.log('Update result:', result);
-      
+      console.log("Update result:", result);
+
       // Update localStorage with new data
       const updatedUser = {
         ...user,
@@ -107,10 +107,10 @@ export default function ProfilePage() {
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
-      
+
       // Clear password field
-      setFormData(prev => ({ ...prev, passwordBaru: "" }));
-      
+      setFormData((prev) => ({ ...prev, passwordBaru: "" }));
+
       alert("Profil berhasil diperbarui!");
     } catch (error) {
       console.error("Error updating profile:", error);

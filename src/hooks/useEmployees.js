@@ -17,7 +17,7 @@ export const useEmployees = () => {
         throw new Error("Gagal mengambil data karyawan");
       }
       const data = await response.json();
-      
+
       // Transform backend data to frontend format
       const transformedData = data.map((user) => ({
         id: user.id,
@@ -29,7 +29,7 @@ export const useEmployees = () => {
         username: user.username,
         idKasir: user.id.toString().padStart(8, "0"), // Format ID dengan padding
       }));
-      
+
       setEmployees(transformedData);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -49,7 +49,8 @@ export const useEmployees = () => {
       emp.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.posisi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (emp.username && emp.username.toLowerCase().includes(searchQuery.toLowerCase()))
+      (emp.username &&
+        emp.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
@@ -110,25 +111,28 @@ export const useEmployees = () => {
         payload.password = employeeData.password;
       }
 
-      console.log('Update Employee Payload:', payload);
-      console.log('Employee ID:', employeeData.id);
+      console.log("Update Employee Payload:", payload);
+      console.log("Employee ID:", employeeData.id);
 
-      const response = await fetch(`${API_ENDPOINTS.USERS}/${employeeData.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${API_ENDPOINTS.USERS}/${employeeData.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Update failed:', errorData);
+        console.error("Update failed:", errorData);
         throw new Error(errorData.message || "Gagal mengupdate karyawan");
       }
 
       const result = await response.json();
-      console.log('Update result:', result);
+      console.log("Update result:", result);
       await fetchEmployees(); // Refresh data
       return { success: true, data: result };
     } catch (error) {
