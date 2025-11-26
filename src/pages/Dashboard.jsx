@@ -1,16 +1,38 @@
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    // Get user role from localStorage
+    const getUserRole = () => {
+      try {
+        const user = localStorage.getItem("user");
+        if (user) {
+          const userData = JSON.parse(user);
+          setUserRole(userData.role || "Kasir");
+        }
+      } catch (error) {
+        console.error("Error reading user role:", error);
+        setUserRole("Kasir");
+      }
+    };
+    getUserRole();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/");
   };
 
-  const cards = [
+  const isAdmin = userRole === "Admin";
+
+  // Admin cards - all features
+  const adminCards = [
     {
       title: "Dashboard Kasir",
       description: "Kelola transaksi penjualan",
@@ -42,6 +64,30 @@ export default function Dashboard() {
       onClick: () => navigate("/profile"),
     },
   ];
+
+  // Kasir cards - limited features
+  const kasirCards = [
+    {
+      title: "Dashboard Kasir",
+      description: "Kelola transaksi penjualan",
+      color: "bg-[#4a77f4]",
+      onClick: () => navigate("/pilih-barang"),
+    },
+    {
+      title: "Laporan Penjualan",
+      description: "Lihat riwayat transaksi",
+      color: "bg-[#ece852]",
+      onClick: () => navigate("/laporan"),
+    },
+    {
+      title: "Profile",
+      description: "Kelola informasi akun",
+      color: "bg-[#9b59b6]",
+      onClick: () => navigate("/profile"),
+    },
+  ];
+
+  const cards = isAdmin ? adminCards : kasirCards;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">

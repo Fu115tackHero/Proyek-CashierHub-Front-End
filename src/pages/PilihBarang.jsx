@@ -15,6 +15,7 @@ export default function PilihBarang() {
   const navigate = useNavigate();
   const {
     products,
+    loading,
     searchQuery,
     setSearchQuery,
     currentPage,
@@ -143,50 +144,71 @@ export default function PilihBarang() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((product, index) => (
-                      <tr
-                        key={product.id}
-                        className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
-                      >
-                        <td className="py-3 px-4 text-sm text-gray-700">
-                          {(currentPage - 1) * 7 + index + 1}
-                        </td>
-                        <td className="py-3 px-4 text-sm font-semibold text-gray-800">
-                          {product.nama}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {product.merek}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600 font-mono">
-                          {product.kode}
-                        </td>
-                        <td className="py-3 px-4 text-sm">
-                          <span
-                            className={`px-2 py-1 rounded-full font-semibold text-xs ${
-                              product.stok > 50
-                                ? "bg-green-100 text-green-700"
-                                : product.stok > 20
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {product.stok}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
-                          Rp {product.harga.toLocaleString("id-ID")}
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => addToCart(product)}
-                            className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
-                          >
-                            <FaShoppingCart className="w-3 h-3" />
-                            Tambah
-                          </button>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-12">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="w-12 h-12 border-4 border-[#1a509a] border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-500 font-medium">
+                              Memuat produk...
+                            </p>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : products.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-12">
+                          <p className="text-gray-500 font-medium">
+                            Tidak ada produk
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      products.map((product, index) => (
+                        <tr
+                          key={product.id}
+                          className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
+                        >
+                          <td className="py-3 px-4 text-sm text-gray-700">
+                            {(currentPage - 1) * 7 + index + 1}
+                          </td>
+                          <td className="py-3 px-4 text-sm font-semibold text-gray-800">
+                            {product.nama}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {product.merek}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600 font-mono">
+                            {product.kode}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            <span
+                              className={`px-2 py-1 rounded-full font-semibold text-xs ${
+                                product.stok > 50
+                                  ? "bg-green-100 text-green-700"
+                                  : product.stok > 20
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {product.stok}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
+                            Rp {product.harga.toLocaleString("id-ID")}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
+                            >
+                              <FaShoppingCart className="w-3 h-3" />
+                              Tambah
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -226,6 +248,7 @@ export default function PilihBarang() {
       {showPaymentModal && (
         <PaymentModal
           total={getTotalPrice()}
+          cartItems={cartItems}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
         />

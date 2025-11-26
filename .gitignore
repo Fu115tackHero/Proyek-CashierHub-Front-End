@@ -48,6 +48,21 @@ dist-ssr/
 coverage/
 *.tsbuildinfo
 
+# Documentation & Setup Files (tidak diperlukan untuk deployment)
+*.md
+!README.md
+SETUP_GUIDE.md
+INTEGRATION_SUMMARY.md
+QUICK_START.md
+TESTING_CHECKLIST.md
+TECHNICAL_CHANGES.md
+RINGKASAN_LENGKAP.md
+
+# Development only files
+.eslintrc*
+.prettierrc*
+.editorconfig
+
 # Uploads (jika ada file yang di-upload secara lokal)
 server/uploads/*
 !server/uploads/.gitkeep

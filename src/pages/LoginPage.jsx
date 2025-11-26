@@ -1,55 +1,63 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgImage2 from "figma:asset/267f62b7f53369d61a610b218f5c7653c8862403.png";
+import { API_ENDPOINTS } from "../config/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Dummy users for testing (matching server dummy data)
-  const dummyUsers = [
-    {
-      username: "admin",
-      password: "admin123",
-      role: "Admin",
-      nama_lengkap: "Administrator",
-    },
-    {
-      username: "kasir01",
-      password: "kasir123",
-      role: "Kasir",
-      nama_lengkap: "Budi Santoso",
-    },
-  ];
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) {
       setError("Mohon isi username dan password");
       return;
     }
 
-    // Find user from dummy data
-    const user = dummyUsers.find(
-      (u) => u.username === username && u.password === password
-    );
+    setLoading(true);
+    setError("");
 
-    if (user) {
-      // Save user data to localStorage (including role)
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          username: user.username,
-          name: user.nama_lengkap,
-          role: user.role,
-        })
+    try {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Save user data to localStorage (including role)
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            id: data.user.id,
+            username: data.user.username,
+            name: data.user.name,
+            email: data.user.email,
+            phone: data.user.phone,
+            address: data.user.address,
+            role: data.user.role,
+            profile_picture: data.user.profile_picture,
+          })
+        );
+
+        // Redirect to dashboard
+        navigate("/dashboard");
+      } else {
+        setError(data.message || "Username atau password salah!");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(
+        "Terjadi kesalahan saat login. Pastikan backend sudah berjalan."
       );
-
-      // Redirect to dashboard
-      navigate("/dashboard");
-    } else {
-      setError("Username atau password salah!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,7 +112,8 @@ export default function LoginPage() {
             <div className="mb-6 bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-xl shadow-lg">
               <p className="text-xs font-medium mb-1">Demo Login:</p>
               <p className="text-xs">Admin: admin / admin123</p>
-              <p className="text-xs">Kasir: kasir01 / kasir123</p>
+              <p className="text-xs">Kasir: budi / budi123</p>
+              <p className="text-xs">Kasir: ahmad / ahmad123</p>
             </div>
 
             {/* Username */}
@@ -180,23 +189,52 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-white text-[#1a509a] text-xl font-bold py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-white text-[#1a509a] text-xl font-bold py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
-                <svg
-                  className="w-6 h-6 group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                  />
-                </svg>
-                Login
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-6 w-6"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-6 h-6 group-hover:translate-x-1 transition-transform"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Login
+                  </>
+                )}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
             </button>

@@ -1,21 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { profileSvgPaths } from "../assets/svg-paths";
+import { API_ENDPOINTS } from "../config/api";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
-    nama: "Joe Mama",
-    idKasir: "411550343",
-    username: "Joe Mama",
-    jabatan: "Kasir",
+    nama: "",
+    idKasir: "",
+    username: "",
+    jabatan: "",
     passwordBaru: "",
-    alamat: "Universitas USU",
-    noTelepon: "08237438726",
-    email: "joemama@gmail.com",
+    alamat: "",
+    noTelepon: "",
+    email: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load user data from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setFormData({
+          nama: userData.name || "",
+          idKasir: userData.id ? userData.id.toString().padStart(8, "0") : "",
+          username: userData.username || "",
+          jabatan: userData.role || "",
+          passwordBaru: "",
+          alamat: userData.address || "",
+          noTelepon: userData.phone || "",
+          email: userData.email || "",
+        });
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -26,9 +53,71 @@ export default function ProfilePage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    alert("Perubahan berhasil disimpan!");
-    console.log("Data profile:", formData);
+  const handleSave = async () => {
+    if (!user || !user.id) {
+      alert("User tidak ditemukan. Silakan login kembali.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        username: formData.username,
+        name: formData.nama,
+        email: formData.email,
+        phone: formData.noTelepon || null,
+        address: formData.alamat || null,
+        role: formData.jabatan,
+      };
+
+      // Only include password if it's being changed
+      if (formData.passwordBaru && formData.passwordBaru.trim() !== "") {
+        payload.password = formData.passwordBaru;
+      }
+
+      console.log('Update Profile Payload:', payload);
+      console.log('User ID:', user.id);
+
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Update failed:', errorData);
+        throw new Error(errorData.message || "Gagal mengupdate profil");
+      }
+
+      const result = await response.json();
+      console.log('Update result:', result);
+      
+      // Update localStorage with new data
+      const updatedUser = {
+        ...user,
+        name: result.name,
+        username: result.username,
+        email: result.email,
+        phone: result.phone,
+        address: result.address,
+        role: result.role,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      
+      // Clear password field
+      setFormData(prev => ({ ...prev, passwordBaru: "" }));
+      
+      alert("Profil berhasil diperbarui!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Gagal memperbarui profil: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleUploadPhoto = () => {
@@ -236,28 +325,39 @@ export default function ProfilePage() {
                 <div className="flex gap-3 justify-end mt-8 pt-6 border-t border-gray-200">
                   <button
                     onClick={() => navigate(-1)}
-                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all"
+                    disabled={isSaving}
+                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleSave}
-                    className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                    disabled={isSaving}
+                    className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Simpan Perubahan
+                    {isSaving ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Simpan Perubahan
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -28,6 +28,7 @@ export default function DataBarang() {
     deleteProduct,
     addProduct,
     updateProduct,
+    loading,
   } = useProducts();
 
   const [showProductModal, setShowProductModal] = useState(false);
@@ -35,6 +36,7 @@ export default function DataBarang() {
   const [showBarcodeQRModal, setShowBarcodeQRModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -46,9 +48,17 @@ export default function DataBarang() {
     setShowProductModal(true);
   };
 
-  const handleDelete = (product) => {
+  const handleDelete = async (product) => {
     if (window.confirm(`Apakah Anda yakin ingin menghapus ${product.nama}?`)) {
-      deleteProduct(product.id);
+      setIsProcessing(true);
+      const result = await deleteProduct(product.id);
+      setIsProcessing(false);
+
+      if (result.success) {
+        alert("Produk berhasil dihapus!");
+      } else {
+        alert(result.message || "Gagal menghapus produk");
+      }
     }
   };
 
@@ -57,11 +67,27 @@ export default function DataBarang() {
     setShowProductModal(true);
   };
 
-  const handleSaveProduct = (productData) => {
+  const handleSaveProduct = async (productData) => {
+    setIsProcessing(true);
+    let result;
+
     if (editingProduct) {
-      updateProduct(productData);
+      result = await updateProduct(productData);
     } else {
-      addProduct(productData);
+      result = await addProduct(productData);
+    }
+
+    setIsProcessing(false);
+
+    if (result.success) {
+      setShowProductModal(false);
+      alert(
+        editingProduct
+          ? "Produk berhasil diupdate!"
+          : "Produk berhasil ditambahkan!"
+      );
+    } else {
+      alert(result.message || "Terjadi kesalahan");
     }
   };
 
@@ -119,7 +145,8 @@ export default function DataBarang() {
             </button>
             <button
               onClick={handleAddNew}
-              className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all font-semibold flex items-center gap-2 text-sm"
+              disabled={isProcessing || loading}
+              className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all font-semibold flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaPlus className="w-4 h-4" />
               Tambah Barang
@@ -158,66 +185,94 @@ export default function DataBarang() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product, index) => (
-                    <tr
-                      key={product.id}
-                      className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
-                    >
-                      <td className="py-3 px-4 text-sm text-gray-700">
-                        {(currentPage - 1) * 7 + index + 1}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-800">
-                        {product.nama}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {product.merek}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 font-mono">
-                        {product.kode}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        <span
-                          className={`px-2 py-1 rounded-full font-semibold text-xs ${
-                            product.stok > 50
-                              ? "bg-green-100 text-green-700"
-                              : product.stok > 20
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {product.stok}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
-                        Rp {product.harga.toLocaleString("id-ID")},00
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleGenerateCode(product)}
-                            className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
-                          >
-                            <FaBarcode className="w-3 h-3" />
-                            QR/Barcode
-                          </button>
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
-                          >
-                            <FaEdit className="w-3 h-3" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product)}
-                            className="bg-gradient-to-r from-[#d84040] to-[#c23636] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
-                          >
-                            <FaTrash className="w-3 h-3" />
-                            Hapus
-                          </button>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <div className="w-12 h-12 border-4 border-[#1a509a] border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-gray-500 text-sm">
+                            Memuat data produk...
+                          </p>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : products.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <FaBox className="w-16 h-16 text-gray-300" />
+                          <p className="text-gray-500 text-sm">
+                            {searchQuery
+                              ? "Produk tidak ditemukan"
+                              : "Belum ada produk"}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((product, index) => (
+                      <tr
+                        key={product.id}
+                        className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
+                      >
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {(currentPage - 1) * 7 + index + 1}
+                        </td>
+                        <td className="py-3 px-4 text-sm font-semibold text-gray-800">
+                          {product.nama}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-600">
+                          {product.merek}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-600 font-mono">
+                          {product.kode}
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded-full font-semibold text-xs ${
+                              product.stok > 50
+                                ? "bg-green-100 text-green-700"
+                                : product.stok > 20
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {product.stok}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
+                          Rp {product.harga.toLocaleString("id-ID")},00
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleGenerateCode(product)}
+                              className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
+                            >
+                              <FaBarcode className="w-3 h-3" />
+                              QR/Barcode
+                            </button>
+                            <button
+                              onClick={() => handleEdit(product)}
+                              disabled={isProcessing}
+                              className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <FaEdit className="w-3 h-3" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product)}
+                              disabled={isProcessing}
+                              className="bg-gradient-to-r from-[#d84040] to-[#c23636] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <FaTrash className="w-3 h-3" />
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
