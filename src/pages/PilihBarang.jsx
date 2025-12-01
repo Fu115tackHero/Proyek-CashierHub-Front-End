@@ -21,7 +21,7 @@ export default function PilihBarang() {
     currentPage,
     setCurrentPage,
     totalPages,
-  } = useProducts();
+  } = useProducts({ hideOutOfStock: true }); // Hide out of stock products in cashier dashboard
   const {
     cartItems,
     addToCart,
@@ -31,6 +31,7 @@ export default function PilihBarang() {
     decrementQuantity,
     clearCart,
     getTotalPrice,
+    getAvailableStock,
   } = useCart();
 
   const [showScanModal, setShowScanModal] = useState(false);
@@ -53,12 +54,14 @@ export default function PilihBarang() {
 
   const handlePaymentSuccess = (cashAmount, change) => {
     const cartSnapshot = [...cartItems];
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
     setPaymentData({
       cash: cashAmount,
       change: change,
       date: new Date().toLocaleString("id-ID"),
       items: cartSnapshot,
       total: getTotalPrice(),
+      employeeName: user.name || "Kasir",
     });
     clearCart();
     setShowStrukModal(true);
@@ -97,7 +100,7 @@ export default function PilihBarang() {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Cari produk berdasarkan nama, merek, atau kode..."
+                  placeholder="Cari produk berdasarkan nama, jenis, atau kode..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl outline-none focus:border-[#1a509a] focus:ring-2 focus:ring-blue-100 transition-all text-sm"
@@ -127,7 +130,7 @@ export default function PilihBarang() {
                         Nama Barang
                       </th>
                       <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
-                        Merek
+                        jenis
                       </th>
                       <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
                         Kode
@@ -164,61 +167,76 @@ export default function PilihBarang() {
                         </td>
                       </tr>
                     ) : (
-                      products.map((product, index) => (
-                        <tr
-                          key={product.id}
-                          className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
-                        >
-                          <td className="py-3 px-4 text-sm text-gray-700">
-                            {(currentPage - 1) * 7 + index + 1}
-                          </td>
-                          <td className="py-3 px-4 text-sm font-semibold text-gray-800">
-                            {product.nama}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {product.merek}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600 font-mono">
-                            {product.kode}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <span
-                              className={`px-2 py-1 rounded-full font-semibold text-xs ${
-                                product.stok > 50
-                                  ? "bg-green-100 text-green-700"
-                                  : product.stok > 20
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-red-100 text-red-700"
-                              }`}
-                            >
-                              {product.stok}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
-                            Rp {product.harga.toLocaleString("id-ID")}
-                          </td>
-                          <td className="py-3 px-4">
-                            <button
-                              onClick={() => addToCart(product)}
-                              className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5"
-                            >
-                              <FaShoppingCart className="w-3 h-3" />
-                              Tambah
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      products.map((product, index) => {
+                        const availableStock = getAvailableStock(
+                          product.id,
+                          product.stok
+                        );
+                        const isOutOfStock = availableStock <= 0;
+
+                        return (
+                          <tr
+                            key={product.id}
+                            className="border-b border-gray-100 hover:bg-blue-50 transition-colors"
+                          >
+                            <td className="py-3 px-4 text-sm text-gray-700">
+                              {(currentPage - 1) * 7 + index + 1}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-semibold text-gray-800">
+                              {product.nama}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {product.jenis}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600 font-mono">
+                              {product.kode}
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <span
+                                className={`px-2 py-1 rounded-full font-semibold text-xs ${
+                                  availableStock > 50
+                                    ? "bg-green-100 text-green-700"
+                                    : availableStock > 20
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {availableStock}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm font-bold text-[#1a509a]">
+                              Rp {product.harga.toLocaleString("id-ID")}
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => addToCart(product)}
+                                disabled={isOutOfStock}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                  isOutOfStock
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white hover:shadow-md"
+                                }`}
+                              >
+                                <FaShoppingCart className="w-3 h-3" />
+                                {isOutOfStock ? "Habis" : "Tambah"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <div className="p-4 bg-gray-50 border-t border-gray-200">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
+              <div className="py-2 px-4 bg-gray-50 border-t border-gray-200">
+                <div className="flex items-center justify-start">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -234,6 +252,7 @@ export default function PilihBarang() {
             onCheckout={handleCheckout}
             onCancel={handleCancel}
             onScanQR={() => setShowScanModal(true)}
+            getAvailableStock={getAvailableStock}
           />
         </div>
       </div>
@@ -261,6 +280,7 @@ export default function PilihBarang() {
           cash={paymentData.cash}
           change={paymentData.change}
           date={paymentData.date}
+          employeeName={paymentData.employeeName}
           onClose={() => setShowStrukModal(false)}
         />
       )}

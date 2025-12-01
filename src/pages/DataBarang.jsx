@@ -130,7 +130,7 @@ export default function DataBarang() {
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Cari barang berdasarkan nama, merek, atau kode..."
+                placeholder="Cari barang berdasarkan nama, jenis, atau kode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl outline-none focus:border-[#1a509a] focus:ring-2 focus:ring-blue-100 transition-all text-sm"
@@ -168,7 +168,7 @@ export default function DataBarang() {
                       Nama Barang
                     </th>
                     <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
-                      Merek
+                      Jenis
                     </th>
                     <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
                       Kode
@@ -222,7 +222,7 @@ export default function DataBarang() {
                           {product.nama}
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">
-                          {product.merek}
+                          {product.jenis}
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600 font-mono">
                           {product.kode}
@@ -278,11 +278,13 @@ export default function DataBarang() {
             </div>
 
             <div className="p-4 bg-gray-50 border-t border-gray-200">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center justify-start">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           </div>
         </div>

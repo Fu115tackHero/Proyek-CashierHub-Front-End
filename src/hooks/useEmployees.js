@@ -72,6 +72,8 @@ export const useEmployees = () => {
         role: employeeData.posisi,
       };
 
+      console.log("Adding employee with payload:", payload);
+
       const response = await fetch(API_ENDPOINTS.USERS, {
         method: "POST",
         headers: {
@@ -82,7 +84,10 @@ export const useEmployees = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Gagal menambah karyawan");
+        console.error("Backend error:", errorData);
+        throw new Error(
+          errorData.error || errorData.message || "Gagal menambah karyawan"
+        );
       }
 
       const result = await response.json();

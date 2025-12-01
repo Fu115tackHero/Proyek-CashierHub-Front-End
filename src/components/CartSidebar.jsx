@@ -19,12 +19,10 @@ export const CartSidebar = ({
   onCheckout,
   onCancel,
   onScanQR,
+  getAvailableStock,
 }) => {
   return (
-    <div
-      className="fixed right-0 top-0 bottom-0 w-80 bg-gradient-to-br from-[#1a509a] to-[#1e4a8a] flex flex-col shadow-2xl z-40"
-      style={{ marginTop: "60px" }}
-    >
+    <div className="fixed right-0 top-16 bottom-0 w-80 bg-gradient-to-br from-[#1a509a] to-[#1e4a8a] flex flex-col shadow-2xl z-20">
       {/* Cart Header */}
       <div className="p-4 flex items-center gap-2 border-b border-white/10">
         <h2 className="text-lg font-bold text-white flex-1 flex items-center gap-2">
@@ -56,56 +54,71 @@ export const CartSidebar = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {cartItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white/95 rounded-xl p-3 shadow-md"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <p className="font-bold text-gray-800 text-xs flex-1 pr-2">
-                    {item.nama}
-                  </p>
-                  <button
-                    onClick={() => onRemoveFromCart(item.id)}
-                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-all"
-                  >
-                    <FaTrash className="w-3 h-3" />
-                  </button>
+            {cartItems.map((item) => {
+              const availableStock = getAvailableStock
+                ? getAvailableStock(item.id, item.stok)
+                : item.stok;
+              const canIncrement = availableStock > 0;
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white/95 rounded-xl p-3 shadow-md"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-bold text-gray-800 text-xs flex-1 pr-2">
+                      {item.nama}
+                    </p>
+                    <button
+                      onClick={() => onRemoveFromCart(item.id)}
+                      className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-all"
+                    >
+                      <FaTrash className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-gray-600 text-xs">
+                      @ Rp {item.harga.toLocaleString("id-ID")},00
+                    </p>
+                    <p className="text-[#1a509a] font-bold text-sm">
+                      Rp {(item.harga * item.quantity).toLocaleString("id-ID")}
+                      ,00
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-lg">
+                    <button
+                      onClick={() => onDecrementQuantity(item.id)}
+                      className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white w-6 h-6 rounded-lg flex items-center justify-center hover:shadow-md transition-all"
+                    >
+                      <FaMinus className="w-2.5 h-2.5" />
+                    </button>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newQty = parseInt(e.target.value) || 0;
+                        if (newQty > 0)
+                          onUpdateQuantity(item.id, newQty, item.stok);
+                      }}
+                      className="font-bold text-sm flex-1 text-center text-gray-800 bg-transparent outline-none w-12"
+                      min="1"
+                      max={item.stok}
+                    />
+                    <button
+                      onClick={() => onIncrementQuantity(item.id, item.stok)}
+                      disabled={!canIncrement}
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                        canIncrement
+                          ? "bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white hover:shadow-md"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      <FaPlus className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-600 text-xs">
-                    @ Rp {item.harga.toLocaleString("id-ID")},00
-                  </p>
-                  <p className="text-[#1a509a] font-bold text-sm">
-                    Rp {(item.harga * item.quantity).toLocaleString("id-ID")},00
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-lg">
-                  <button
-                    onClick={() => onDecrementQuantity(item.id)}
-                    className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white w-6 h-6 rounded-lg flex items-center justify-center hover:shadow-md transition-all"
-                  >
-                    <FaMinus className="w-2.5 h-2.5" />
-                  </button>
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const newQty = parseInt(e.target.value) || 0;
-                      if (newQty > 0) onUpdateQuantity(item.id, newQty);
-                    }}
-                    className="font-bold text-sm flex-1 text-center text-gray-800 bg-transparent outline-none w-12"
-                    min="1"
-                  />
-                  <button
-                    onClick={() => onIncrementQuantity(item.id)}
-                    className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white w-6 h-6 rounded-lg flex items-center justify-center hover:shadow-md transition-all"
-                  >
-                    <FaPlus className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

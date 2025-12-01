@@ -18,7 +18,7 @@ export default function ProfilePage() {
     noTelepon: "",
     email: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load user data from localStorage on mount
@@ -28,6 +28,7 @@ export default function ProfilePage() {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
+        setProfilePicture(userData.profile_picture || null);
         setFormData({
           nama: userData.name || "",
           idKasir: userData.id ? userData.id.toString().padStart(8, "0") : "",
@@ -53,6 +54,40 @@ export default function ProfilePage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        alert("File harus berupa gambar!");
+        return;
+      }
+
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran file maksimal 2MB!");
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadPhoto = () => {
+    document.getElementById("photoInput").click();
+  };
+
+  const handleDeletePhoto = () => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus foto profil?")) {
+      setProfilePicture(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !user.id) {
       alert("User tidak ditemukan. Silakan login kembali.");
@@ -68,6 +103,7 @@ export default function ProfilePage() {
         phone: formData.noTelepon || null,
         address: formData.alamat || null,
         role: formData.jabatan,
+        profile_picture: profilePicture,
       };
 
       // Only include password if it's being changed
@@ -104,9 +140,13 @@ export default function ProfilePage() {
         phone: result.phone,
         address: result.address,
         role: result.role,
+        profile_picture: result.profile_picture || profilePicture,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
+
+      // Trigger custom event to update Header in real-time
+      window.dispatchEvent(new Event("profileUpdated"));
 
       // Clear password field
       setFormData((prev) => ({ ...prev, passwordBaru: "" }));
@@ -118,10 +158,6 @@ export default function ProfilePage() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleUploadPhoto = () => {
-    alert("Fitur upload foto akan diimplementasikan");
   };
 
   return (
@@ -141,44 +177,46 @@ export default function ProfilePage() {
             <div className="flex gap-10">
               {/* Photo Section */}
               <div className="flex flex-col items-center gap-5">
-                <div className="relative group">
+                <input
+                  type="file"
+                  id="photoInput"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+
+                {/* PERUBAHAN: 
+                    1. Menghapus class 'group' dari div parent agar tidak ada efek hover.
+                    2. Menghapus div overlay kamera sepenuhnya.
+                */}
+                <div className="relative">
                   <div className="w-48 h-48 rounded-full bg-gradient-to-br from-[#1a509a] to-[#2d6bc4] p-1 shadow-xl">
                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                      <svg
-                        className="w-32 h-32 text-gray-400"
-                        fill="currentColor"
-                        viewBox="0 0 258 258"
-                      >
-                        <path
-                          clipRule="evenodd"
-                          d={profileSvgPaths.pcbca680}
-                          fillRule="evenodd"
+                      {profilePicture ? (
+                        <img
+                          src={profilePicture}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
                         />
-                      </svg>
+                      ) : (
+                        <svg
+                          className="w-32 h-32 text-gray-400"
+                          fill="currentColor"
+                          viewBox="0 0 258 258"
+                        >
+                          <path
+                            clipRule="evenodd"
+                            d={profileSvgPaths.pcbca680}
+                            fillRule="evenodd"
+                          />
+                        </svg>
+                      )}
                     </div>
                   </div>
-                  <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
-                    <svg
-                      className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
+
+                  {/* Overlay kamera dihapus di sini */}
                 </div>
+
                 <button
                   onClick={handleUploadPhoto}
                   className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
@@ -198,6 +236,28 @@ export default function ProfilePage() {
                   </svg>
                   Ubah Foto
                 </button>
+
+                {profilePicture && (
+                  <button
+                    onClick={handleDeletePhoto}
+                    className="bg-gradient-to-r from-[#d84040] to-[#c23636] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Hapus Foto
+                  </button>
+                )}
                 <div className="text-center mt-2">
                   <p className="text-2xl font-bold text-gray-800">
                     {formData.nama}
@@ -232,8 +292,8 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       value={formData.idKasir}
-                      onChange={(e) => handleChange("idKasir", e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                      readOnly
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
                     />
                   </div>
 

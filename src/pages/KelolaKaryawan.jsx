@@ -89,12 +89,16 @@ export default function KelolaKaryawan() {
             role: result.data.role,
           };
           localStorage.setItem("user", JSON.stringify(updatedUser));
+
+          // Trigger custom event to update Header in real-time
+          window.dispatchEvent(new Event("profileUpdated"));
         }
       }
 
       setShowEmployeeModal(false);
+      setEditingEmployee(null);
     } else {
-      alert("Gagal menyimpan karyawan: " + result.error);
+      alert(`Gagal: ${result.error || "Terjadi kesalahan"}`);
     }
   };
 
@@ -217,10 +221,9 @@ export default function KelolaKaryawan() {
                         <td className="py-3 px-4 text-sm">
                           <span
                             className={`px-2 py-1 rounded-full font-semibold text-xs ${
-                              employee.posisi === "Admin"
+                              employee.posisi === "Admin" ||
+                              employee.posisi === "admin"
                                 ? "bg-purple-100 text-purple-700"
-                                : employee.posisi === "Manager"
-                                ? "bg-orange-100 text-orange-700"
                                 : "bg-blue-100 text-blue-700"
                             }`}
                           >
@@ -256,11 +259,13 @@ export default function KelolaKaryawan() {
 
             {/* Pagination Footer */}
             <div className="p-4 bg-gray-50 border-t border-gray-200">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center justify-start">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
             </div>
           </div>
         </div>

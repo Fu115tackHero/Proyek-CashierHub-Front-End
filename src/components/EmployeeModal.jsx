@@ -256,9 +256,7 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
             className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a509a] transition-all"
           >
             <option value="Kasir">Kasir</option>
-            <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
-            <option value="Supervisor">Supervisor</option>
           </select>
         </div>
 

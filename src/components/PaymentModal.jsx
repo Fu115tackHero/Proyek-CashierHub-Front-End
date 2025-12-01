@@ -38,6 +38,8 @@ export const PaymentModal = ({ total, onClose, onSuccess, cartItems }) => {
       const payload = {
         user_id: user?.id || 1,
         total_price: total,
+        cash_amount: cash,
+        change_amount: calculatedChange,
         items: cartItems.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
@@ -54,7 +56,8 @@ export const PaymentModal = ({ total, onClose, onSuccess, cartItems }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Gagal menyimpan transaksi");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Gagal menyimpan transaksi");
       }
 
       const result = await response.json();

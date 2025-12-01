@@ -172,8 +172,8 @@ export const BarcodeQRModal = ({ onClose, product }) => {
                 <p className="font-semibold text-gray-800">{product.nama}</p>
               </div>
               <div>
-                <p className="text-gray-600 mb-1">Merek</p>
-                <p className="font-semibold text-gray-800">{product.merek}</p>
+                <p className="text-gray-600 mb-1">jenis</p>
+                <p className="font-semibold text-gray-800">{product.jenis}</p>
               </div>
               <div>
                 <p className="text-gray-600 mb-1">Kode Produk</p>

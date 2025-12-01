@@ -6,7 +6,7 @@ const getInitialFormData = (product) => {
   if (product) {
     return {
       nama: product.nama || "",
-      merek: product.merek || "",
+      jenis: product.jenis || "",
       kode: product.kode || "",
       stok: product.stok?.toString() || "",
       harga: product.harga?.toString() || "",
@@ -14,7 +14,7 @@ const getInitialFormData = (product) => {
   }
   return {
     nama: "",
-    merek: "",
+    jenis: "",
     kode: "",
     stok: "",
     harga: "",
@@ -29,7 +29,7 @@ export const ProductModal = ({ onClose, onSave, product = null }) => {
     const newErrors = {};
 
     if (!formData.nama.trim()) newErrors.nama = "Nama barang harus diisi";
-    if (!formData.merek.trim()) newErrors.merek = "Merek harus diisi";
+    if (!formData.jenis.trim()) newErrors.jenis = "jenis harus diisi";
     if (!formData.kode.trim()) newErrors.kode = "Kode barang harus diisi";
     if (!formData.stok || formData.stok < 0)
       newErrors.stok = "Stok harus berupa angka positif";
@@ -78,7 +78,7 @@ export const ProductModal = ({ onClose, onSave, product = null }) => {
   const handleClose = () => {
     setFormData({
       nama: "",
-      merek: "",
+      jenis: "",
       kode: "",
       stok: "",
       harga: "",
@@ -137,24 +137,24 @@ export const ProductModal = ({ onClose, onSave, product = null }) => {
           )}
         </div>
 
-        {/* Merek */}
+        {/* jenis */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             <FaBox className="inline mr-2 text-[#1a509a]" />
-            Merek
+            jenis
           </label>
           <input
             type="text"
-            name="merek"
-            value={formData.merek}
+            name="jenis"
+            value={formData.jenis}
             onChange={handleChange}
             className={`w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a509a] transition-all ${
-              errors.merek ? "border-red-500" : "border-gray-300"
+              errors.jenis ? "border-red-500" : "border-gray-300"
             }`}
-            placeholder="Masukkan merek barang"
+            placeholder="Masukkan jenis barang"
           />
-          {errors.merek && (
-            <p className="text-red-500 text-sm mt-1">{errors.merek}</p>
+          {errors.jenis && (
+            <p className="text-red-500 text-sm mt-1">{errors.jenis}</p>
           )}
         </div>
 

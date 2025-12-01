@@ -9,7 +9,7 @@ export const StrukPembayaran = ({
   change,
   date,
   onClose,
-  employeeName = "JoeMama",
+  employeeName = "Kasir",
   employeeAddress = "Universitas USU",
 }) => {
   const printContentRef = useRef(null);
