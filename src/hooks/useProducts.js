@@ -51,10 +51,11 @@ export const useProducts = (options = {}) => {
   // Filter products based on search query AND optionally exclude out of stock
   const filteredProducts = allProducts.filter((product) => {
     // Filter by search query
+    // FIX: Convert kode to string to handle numeric codes consistently
     const matchesSearch =
       product.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.jenis.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.kode.includes(searchQuery);
+      String(product.kode).toLowerCase().includes(searchQuery.toLowerCase());
 
     // Filter by stock if hideOutOfStock is true
     const hasStock = hideOutOfStock ? product.stok > 0 : true;

@@ -15,6 +15,7 @@ export default function PilihBarang() {
   const navigate = useNavigate();
   const {
     products,
+    allProducts, // FIX: Ambil semua produk (tidak di-paginate) untuk scan
     loading,
     searchQuery,
     setSearchQuery,
@@ -108,11 +109,15 @@ export default function PilihBarang() {
     if (isProcessingScan) return;
 
     console.log("Scanned:", decodedText);
+    console.log("Searching in", allProducts.length, "products (not paginated)");
 
-    // Cari produk berdasarkan kode yang di-scan
-    const foundProduct = products.find(
-      (p) => p.kode.toLowerCase() === decodedText.toLowerCase()
+    // FIX: Cari produk dari SEMUA products (allProducts), bukan yang di-paginate
+    // Convert kode to string first to handle numeric codes from fresh INSERT
+    const foundProduct = allProducts.find(
+      (p) => String(p.kode).toLowerCase() === String(decodedText).toLowerCase()
     );
+
+    console.log("Found product:", foundProduct);
 
     if (foundProduct) {
       if (scanModalSource === "cart") {

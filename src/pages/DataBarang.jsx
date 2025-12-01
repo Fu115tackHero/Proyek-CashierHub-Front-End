@@ -20,6 +20,7 @@ export default function DataBarang() {
   const navigate = useNavigate();
   const {
     products,
+    allProducts, // FIX: Ambil semua produk untuk scan
     searchQuery,
     setSearchQuery,
     currentPage,
@@ -127,8 +128,10 @@ export default function DataBarang() {
   };
 
   const handleScanQRSuccess = (decodedText) => {
-    const foundProduct = products.find(
-      (p) => p.kode.toLowerCase() === decodedText.toLowerCase()
+    // FIX: Cari dari SEMUA produk, bukan yang di-paginate
+    // Convert kode to string first to handle numeric codes from fresh INSERT
+    const foundProduct = allProducts.find(
+      (p) => String(p.kode).toLowerCase() === String(decodedText).toLowerCase()
     );
 
     if (foundProduct) {
