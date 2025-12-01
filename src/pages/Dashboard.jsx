@@ -29,9 +29,11 @@ export default function Dashboard() {
     navigate("/");
   };
 
+  const isSuperAdmin = userRole === "Super Admin";
   const isAdmin = userRole === "Admin";
+  const hasManagementAccess = isSuperAdmin || isAdmin;
 
-  // Admin cards - all features
+  // Super Admin & Admin cards - all features
   const adminCards = [
     {
       title: "Dashboard Kasir",
@@ -87,7 +89,7 @@ export default function Dashboard() {
     },
   ];
 
-  const cards = isAdmin ? adminCards : kasirCards;
+  const cards = hasManagementAccess ? adminCards : kasirCards;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">

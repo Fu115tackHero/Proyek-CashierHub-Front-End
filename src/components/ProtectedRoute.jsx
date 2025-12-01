@@ -17,7 +17,8 @@ export const AdminRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (user.role !== "Admin") {
+  // Allow both Admin and Super Admin
+  if (user.role !== "Admin" && user.role !== "Super Admin") {
     return <Navigate to="/dashboard" replace />;
   }
 

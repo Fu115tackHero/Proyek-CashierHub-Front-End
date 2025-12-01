@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
@@ -29,6 +29,7 @@ export default function DataBarang() {
     addProduct,
     updateProduct,
     loading,
+    refreshProducts,
   } = useProducts();
 
   const [showProductModal, setShowProductModal] = useState(false);
@@ -37,6 +38,35 @@ export default function DataBarang() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Auto-refresh data ketika halaman menjadi visible/focused
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshProducts();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshProducts();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Periodic refresh setiap 30 detik untuk memastikan data tetap up-to-date
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshProducts();
+      }
+    }, 30000); // 30 detik
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(intervalId);
+    };
+  }, [refreshProducts]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");

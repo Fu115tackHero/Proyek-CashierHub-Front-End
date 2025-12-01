@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
@@ -20,11 +20,46 @@ export default function KelolaKaryawan() {
     addEmployee,
     updateEmployee,
     deleteEmployee,
+    refreshEmployees,
   } = useEmployees();
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Get current user untuk permission check
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isSuperAdmin = currentUser.role === "Super Admin";
+  const isAdmin = currentUser.role === "Admin";
+
+  // Auto-refresh data karyawan ketika halaman menjadi visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshEmployees();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshEmployees();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Periodic refresh setiap 30 detik
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshEmployees();
+      }
+    }, 30000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(intervalId);
+    };
+  }, [refreshEmployees]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -32,16 +67,52 @@ export default function KelolaKaryawan() {
   };
 
   const handleAddNew = () => {
+    // Admin dan Super Admin bisa menambah karyawan
+    // Admin hanya bisa menambah Kasir (dibatasi di EmployeeModal)
     setEditingEmployee(null);
     setShowEmployeeModal(true);
   };
 
   const handleEdit = (employee) => {
+    // Admin tidak bisa edit Admin atau Super Admin (hanya bisa edit Kasir)
+    if (
+      isAdmin &&
+      (employee.posisi === "Admin" || employee.posisi === "Super Admin")
+    ) {
+      alert(
+        "Admin tidak memiliki izin untuk mengedit karyawan dengan role Admin atau Super Admin."
+      );
+      return;
+    }
+
     setEditingEmployee(employee);
     setShowEmployeeModal(true);
   };
 
   const handleDelete = async (employee) => {
+    // Admin tidak bisa hapus diri sendiri
+    if (employee.id === currentUser.id) {
+      alert("Anda tidak dapat menghapus akun Anda sendiri!");
+      return;
+    }
+
+    // Admin tidak bisa hapus Admin atau Super Admin (hanya bisa hapus Kasir)
+    if (
+      isAdmin &&
+      (employee.posisi === "Admin" || employee.posisi === "Super Admin")
+    ) {
+      alert(
+        "Admin tidak memiliki izin untuk menghapus karyawan dengan role Admin atau Super Admin."
+      );
+      return;
+    }
+
+    // Super Admin tidak bisa hapus diri sendiri
+    if (isSuperAdmin && employee.id === currentUser.id) {
+      alert("Anda tidak dapat menghapus akun Anda sendiri!");
+      return;
+    }
+
     if (window.confirm(`Apakah Anda yakin ingin menghapus ${employee.nama}?`)) {
       setIsProcessing(true);
       const result = await deleteEmployee(employee.id);
@@ -221,8 +292,10 @@ export default function KelolaKaryawan() {
                         <td className="py-3 px-4 text-sm">
                           <span
                             className={`px-2 py-1 rounded-full font-semibold text-xs ${
-                              employee.posisi === "Admin" ||
-                              employee.posisi === "admin"
+                              employee.posisi === "Super Admin"
+                                ? "bg-red-100 text-red-700"
+                                : employee.posisi === "Admin" ||
+                                  employee.posisi === "admin"
                                 ? "bg-purple-100 text-purple-700"
                                 : "bg-blue-100 text-blue-700"
                             }`}
@@ -234,16 +307,56 @@ export default function KelolaKaryawan() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEdit(employee)}
-                              disabled={isProcessing}
-                              className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={
+                                isProcessing ||
+                                (isAdmin &&
+                                  (employee.posisi === "Admin" ||
+                                    employee.posisi === "Super Admin"))
+                              }
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                isAdmin &&
+                                (employee.posisi === "Admin" ||
+                                  employee.posisi === "Super Admin")
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white hover:shadow-md"
+                              } disabled:opacity-50`}
+                              title={
+                                isAdmin &&
+                                (employee.posisi === "Admin" ||
+                                  employee.posisi === "Super Admin")
+                                  ? "Admin tidak dapat edit karyawan Admin/Super Admin"
+                                  : "Edit karyawan"
+                              }
                             >
                               <FaEdit className="w-3 h-3" />
                               Edit
                             </button>
                             <button
                               onClick={() => handleDelete(employee)}
-                              disabled={isProcessing}
-                              className="bg-gradient-to-r from-[#d84040] to-[#c23636] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={
+                                isProcessing ||
+                                employee.id === currentUser.id ||
+                                (isAdmin &&
+                                  (employee.posisi === "Admin" ||
+                                    employee.posisi === "Super Admin"))
+                              }
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                employee.id === currentUser.id ||
+                                (isAdmin &&
+                                  (employee.posisi === "Admin" ||
+                                    employee.posisi === "Super Admin"))
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-gradient-to-r from-[#d84040] to-[#c23636] text-white hover:shadow-md"
+                              } disabled:opacity-50`}
+                              title={
+                                employee.id === currentUser.id
+                                  ? "Tidak dapat menghapus akun sendiri"
+                                  : isAdmin &&
+                                    (employee.posisi === "Admin" ||
+                                      employee.posisi === "Super Admin")
+                                  ? "Admin tidak dapat hapus karyawan Admin/Super Admin"
+                                  : "Hapus karyawan"
+                              }
                             >
                               <FaTrash className="w-3 h-3" />
                               Hapus

@@ -48,6 +48,10 @@ export const Sidebar = ({ onLogout }) => {
 
   const userRole = getUserRole();
   const isAdmin = userRole === "Admin";
+  const isSuperAdmin = userRole === "Super Admin";
+
+  // Super Admin dan Admin punya akses menu manajemen
+  const hasManagementAccess = isSuperAdmin || isAdmin;
 
   const handleLogoutClick = (e) => {
     e.preventDefault();
@@ -90,8 +94,8 @@ export const Sidebar = ({ onLogout }) => {
               />
             </div>
 
-            {/* Menu Manajemen - Only for Admin */}
-            {isAdmin && (
+            {/* Menu Manajemen - For Admin and Super Admin */}
+            {hasManagementAccess && (
               <div className="mb-2">
                 <p className="text-blue-200 text-xs font-semibold px-3 mb-2 uppercase tracking-wider">
                   Manajemen

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
@@ -21,6 +21,7 @@ export default function PilihBarang() {
     currentPage,
     setCurrentPage,
     totalPages,
+    refreshProducts,
   } = useProducts({ hideOutOfStock: true }); // Hide out of stock products in cashier dashboard
   const {
     cartItems,
@@ -42,6 +43,35 @@ export default function PilihBarang() {
     change: 0,
     date: "",
   });
+
+  // Auto-refresh data produk ketika halaman menjadi visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshProducts();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshProducts();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Periodic refresh setiap 30 detik
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshProducts();
+      }
+    }, 30000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(intervalId);
+    };
+  }, [refreshProducts]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -270,6 +300,7 @@ export default function PilihBarang() {
           cartItems={cartItems}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
+          onTransactionComplete={refreshProducts}
         />
       )}
 

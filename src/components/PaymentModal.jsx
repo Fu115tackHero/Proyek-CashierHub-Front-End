@@ -7,7 +7,13 @@ import {
 } from "react-icons/fa";
 import { API_ENDPOINTS } from "../config/api";
 
-export const PaymentModal = ({ total, onClose, onSuccess, cartItems }) => {
+export const PaymentModal = ({
+  total,
+  onClose,
+  onSuccess,
+  cartItems,
+  onTransactionComplete,
+}) => {
   const [cashAmount, setCashAmount] = useState("");
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -62,6 +68,12 @@ export const PaymentModal = ({ total, onClose, onSuccess, cartItems }) => {
 
       const result = await response.json();
       console.log("Transaction saved:", result);
+
+      // Refresh products untuk update stok secara real-time
+      if (onTransactionComplete) {
+        await onTransactionComplete();
+      }
+
       setShowSuccess(true);
     } catch (error) {
       console.error("Error saving transaction:", error);

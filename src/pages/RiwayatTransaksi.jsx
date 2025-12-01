@@ -15,9 +15,11 @@ export default function RiwayatTransaksi() {
 
   // Get current user info
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isSuperAdmin = currentUser.role === "Super Admin";
   const isAdmin = currentUser.role === "Admin";
+  const hasFullAccess = isSuperAdmin || isAdmin; // Super Admin & Admin bisa lihat semua transaksi
 
-  // Filter kasir states (only for Admin)
+  // Filter kasir states (only for Admin and Super Admin)
   const [cashiers, setCashiers] = useState([]);
   const [selectedCashier, setSelectedCashier] = useState("all");
   const [cashierSearchQuery, setCashierSearchQuery] = useState("");
@@ -39,46 +41,76 @@ export default function RiwayatTransaksi() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Fetch transactions from backend
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(API_ENDPOINTS.TRANSACTIONS);
-        if (!response.ok) {
-          throw new Error("Gagal mengambil data transaksi");
-        }
-        const data = await response.json();
-
-        // Transform data from backend to frontend format
-        const transformedData = data.map((trans) => {
-          const transDate = new Date(trans.transaction_date);
-          return {
-            id: trans.id,
-            // Format string hanya untuk TAMPILAN di tabel
-            tanggal: transDate.toLocaleDateString("id-ID"),
-            // 2. FIX: Simpan object Date asli untuk Logic FILTERING
-            originalDate: transDate,
-            kasir: trans.kasir_name || "Unknown",
-            kasir_id: trans.user_id, // Tambah user_id untuk filter
-            total: parseFloat(trans.total_amount),
-          };
-        });
-
-        setTransactions(transformedData);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        setTransactions([]);
-      } finally {
-        setLoading(false);
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.TRANSACTIONS);
+      if (!response.ok) {
+        throw new Error("Gagal mengambil data transaksi");
       }
-    };
+      const data = await response.json();
 
+      // Transform data from backend to frontend format
+      const transformedData = data.map((trans) => {
+        const transDate = new Date(trans.transaction_date);
+        return {
+          id: trans.id,
+          // Format string hanya untuk TAMPILAN di tabel
+          tanggal: transDate.toLocaleDateString("id-ID"),
+          // 2. FIX: Simpan object Date asli untuk Logic FILTERING
+          originalDate: transDate,
+          kasir: trans.kasir_name || "Unknown",
+          kasir_id: trans.user_id, // Tambah user_id untuk filter
+          total: parseFloat(trans.total_amount),
+        };
+      });
+
+      setTransactions(transformedData);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
     fetchTransactions();
   }, []);
 
-  // Fetch list of cashiers (only for Admin)
+  // Auto-refresh ketika halaman menjadi visible/focused
   useEffect(() => {
-    if (isAdmin) {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchTransactions();
+      }
+    };
+
+    const handleFocus = () => {
+      fetchTransactions();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Periodic refresh setiap 30 detik untuk memastikan data transaksi terbaru
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchTransactions();
+      }
+    }, 30000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  // Fetch list of cashiers (only for Admin and Super Admin)
+  useEffect(() => {
+    if (hasFullAccess) {
       const fetchCashiers = async () => {
         try {
           const response = await fetch(API_ENDPOINTS.USERS);
@@ -96,7 +128,7 @@ export default function RiwayatTransaksi() {
       };
       fetchCashiers();
     }
-  }, [isAdmin]);
+  }, [hasFullAccess]);
 
   const handleViewDetail = async (transactionId) => {
     setLoadingDetail(true);
@@ -127,17 +159,17 @@ export default function RiwayatTransaksi() {
     let filtered = transactions;
 
     // Filter berdasarkan role
-    if (!isAdmin) {
+    if (!hasFullAccess) {
       // Kasir hanya lihat transaksi mereka sendiri
       filtered = filtered.filter((trans) => trans.kasir_id === currentUser.id);
     } else if (selectedCashier !== "all") {
-      // Admin filter berdasarkan kasir yang dipilih
+      // Admin/Super Admin filter berdasarkan kasir yang dipilih
       filtered = filtered.filter(
         (trans) => trans.kasir_id === parseInt(selectedCashier)
       );
     }
 
-    if (isAdmin && cashierSearchQuery) {
+    if (hasFullAccess && cashierSearchQuery) {
       const query = cashierSearchQuery.toLowerCase();
       filtered = filtered.filter((trans) =>
         trans.kasir.toLowerCase().includes(query)
@@ -205,8 +237,8 @@ export default function RiwayatTransaksi() {
           </div>
 
           <div className="mb-6 flex gap-4 items-end">
-            {/* Filter Kasir - Only for Admin */}
-            {isAdmin && (
+            {/* Filter Kasir - Only for Admin and Super Admin */}
+            {hasFullAccess && (
               <div className="flex-1">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Filter Kasir
@@ -239,8 +271,8 @@ export default function RiwayatTransaksi() {
               </div>
             )}
 
-            {/* Searchbar Kasir - Only for Admin */}
-            {isAdmin && (
+            {/* Searchbar Kasir - Only for Admin and Super Admin */}
+            {hasFullAccess && (
               <div className="flex-1">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Cari Kasir
