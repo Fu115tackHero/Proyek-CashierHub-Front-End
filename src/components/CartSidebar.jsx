@@ -20,9 +20,10 @@ export const CartSidebar = ({
   onCancel,
   onScanQR,
   getAvailableStock,
+  isScanModalOpen = false,
 }) => {
   return (
-    <div className="fixed right-0 top-16 bottom-0 w-80 bg-gradient-to-br from-[#1a509a] to-[#1e4a8a] flex flex-col shadow-2xl z-20">
+    <div className="fixed right-0 top-16 bottom-0 w-80 bg-gradient-to-br from-[#1a509a] to-[#1e4a8a] flex flex-col shadow-2xl z-50">
       {/* Cart Header */}
       <div className="p-4 flex items-center gap-2 border-b border-white/10">
         <h2 className="text-lg font-bold text-white flex-1 flex items-center gap-2">
@@ -31,7 +32,12 @@ export const CartSidebar = ({
         </h2>
         <button
           onClick={onScanQR}
-          className="bg-white/20 backdrop-blur-sm border border-white/30 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/30 transition-all flex items-center gap-1.5"
+          disabled={isScanModalOpen}
+          className={`backdrop-blur-sm border border-white/30 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            isScanModalOpen
+              ? "bg-white/10 opacity-50 cursor-not-allowed"
+              : "bg-white/20 hover:bg-white/30"
+          }`}
         >
           <FaQrcode className="w-3 h-3" />
           Scan QR

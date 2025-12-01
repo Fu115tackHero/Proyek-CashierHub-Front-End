@@ -4,30 +4,30 @@ export const useCart = () => {
   const [cartItems, setCartItems] = useState([]);
 
   const addToCart = (product) => {
-    const existingItem = cartItems.find((item) => item.id === product.id);
+    setCartItems((prevCartItems) => {
+      const existingItem = prevCartItems.find((item) => item.id === product.id);
 
-    if (existingItem) {
-      // Validasi: quantity di keranjang tidak boleh melebihi stok database
-      if (existingItem.quantity >= product.stok) {
-        alert(
-          `Stok ${product.nama} tidak mencukupi! Tersisa ${product.stok} di database.`
-        );
-        return;
-      }
-      setCartItems(
-        cartItems.map((item) =>
+      if (existingItem) {
+        // Validasi: quantity di keranjang tidak boleh melebihi stok database
+        if (existingItem.quantity >= product.stok) {
+          alert(
+            `Stok ${product.nama} tidak mencukupi! Tersisa ${product.stok} di database.`
+          );
+          return prevCartItems; // Return state lama, tidak ada perubahan
+        }
+        return prevCartItems.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
-        )
-      );
-    } else {
-      if (product.stok < 1) {
-        alert(`Stok ${product.nama} habis!`);
-        return;
+        );
+      } else {
+        if (product.stok < 1) {
+          alert(`Stok ${product.nama} habis!`);
+          return prevCartItems; // Return state lama
+        }
+        return [...prevCartItems, { ...product, quantity: 1 }];
       }
-      setCartItems([...cartItems, { ...product, quantity: 1 }]);
-    }
+    });
   };
 
   const removeFromCart = (productId) => {

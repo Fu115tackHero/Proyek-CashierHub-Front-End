@@ -36,6 +36,8 @@ export default function PilihBarang() {
   } = useCart();
 
   const [showScanModal, setShowScanModal] = useState(false);
+  const [scanModalSource, setScanModalSource] = useState("search"); // 'search' or 'cart'
+  const [isProcessingScan, setIsProcessingScan] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showStrukModal, setShowStrukModal] = useState(false);
   const [paymentData, setPaymentData] = useState({
@@ -102,9 +104,51 @@ export default function PilihBarang() {
   };
 
   const handleScanSuccess = (decodedText) => {
+    // Cegah scan berulang terlalu cepat
+    if (isProcessingScan) return;
+
     console.log("Scanned:", decodedText);
-    setSearchQuery(decodedText);
-    setShowScanModal(false);
+
+    // Cari produk berdasarkan kode yang di-scan
+    const foundProduct = products.find(
+      (p) => p.kode.toLowerCase() === decodedText.toLowerCase()
+    );
+
+    if (foundProduct) {
+      if (scanModalSource === "cart") {
+        // Scan dari keranjang - tambah ke cart, modal TETAP BUKA
+        if (foundProduct.stok > 0) {
+          // Lock scan untuk mencegah double scan
+          setIsProcessingScan(true);
+
+          // Cek stok tersedia sebelum add
+          const availableStock = getAvailableStock(
+            foundProduct.id,
+            foundProduct.stok
+          );
+          if (availableStock > 0) {
+            // addToCart sudah handle increment otomatis jika item ada
+            addToCart(foundProduct);
+          } else {
+            alert(`Stok ${foundProduct.nama} tidak cukup!`);
+          }
+
+          // Unlock setelah 800ms (cooldown scanner sudah 1.5 detik)
+          setTimeout(() => {
+            setIsProcessingScan(false);
+          }, 800);
+        } else {
+          alert("Stok produk habis!");
+        }
+      } else {
+        // Scan dari pencarian - close modal, tampilkan hasil
+        setShowScanModal(false);
+        setSearchQuery(decodedText);
+        setCurrentPage(1);
+      }
+    } else {
+      alert("Produk tidak ditemukan!");
+    }
   };
 
   return (
@@ -137,7 +181,10 @@ export default function PilihBarang() {
                 />
               </div>
               <button
-                onClick={() => setShowScanModal(true)}
+                onClick={() => {
+                  setScanModalSource("search");
+                  setShowScanModal(true);
+                }}
                 className="bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all font-semibold flex items-center gap-2 text-sm"
               >
                 <FaQrcode className="w-4 h-4" />
@@ -281,8 +328,12 @@ export default function PilihBarang() {
             getTotalPrice={getTotalPrice}
             onCheckout={handleCheckout}
             onCancel={handleCancel}
-            onScanQR={() => setShowScanModal(true)}
+            onScanQR={() => {
+              setScanModalSource("cart");
+              setShowScanModal(true);
+            }}
             getAvailableStock={getAvailableStock}
+            isScanModalOpen={showScanModal}
           />
         </div>
       </div>
@@ -291,6 +342,8 @@ export default function PilihBarang() {
         <ScanQRModal
           onClose={() => setShowScanModal(false)}
           onScanSuccess={handleScanSuccess}
+          fromCart={scanModalSource === "cart"}
+          isProcessing={isProcessingScan}
         />
       )}
 
