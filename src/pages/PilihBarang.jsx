@@ -128,7 +128,7 @@ export default function PilihBarang() {
           if (availableStock > 0) {
             // addToCart sudah handle increment otomatis jika item ada
             addToCart(foundProduct);
-            
+
             // Unlock setelah 800ms
             setTimeout(() => {
               setIsProcessingScan(false);
