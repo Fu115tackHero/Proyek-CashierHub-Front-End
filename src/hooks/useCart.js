@@ -1,48 +1,80 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-export const useCart = () => {
+export const useCart = (showWarning) => {
   const [cartItems, setCartItems] = useState([]);
 
   const addToCart = (product) => {
-    const existingItem = cartItems.find(item => item.id === product.id);
-    
-    if (existingItem) {
-      setCartItems(cartItems.map(item =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCartItems([...cartItems, { ...product, quantity: 1 }]);
-    }
+    setCartItems((prevCartItems) => {
+      const existingItem = prevCartItems.find((item) => item.id === product.id);
+
+      if (existingItem) {
+        // Validasi: quantity di keranjang tidak boleh melebihi stok database
+        if (existingItem.quantity >= product.stok) {
+          if (showWarning) {
+            showWarning(
+              `Stok ${product.nama} tidak mencukupi! Tersisa ${product.stok} di database.`
+            );
+          }
+          return prevCartItems; // Return state lama, tidak ada perubahan
+        }
+        return prevCartItems.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        if (product.stok < 1) {
+          if (showWarning) {
+            showWarning(`Stok ${product.nama} habis!`);
+          }
+          return prevCartItems; // Return state lama
+        }
+        return [...prevCartItems, { ...product, quantity: 1 }];
+      }
+    });
   };
 
   const removeFromCart = (productId) => {
-    setCartItems(cartItems.filter(item => item.id !== productId));
+    setCartItems(cartItems.filter((item) => item.id !== productId));
   };
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (productId, quantity, maxStok) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
-    
-    setCartItems(cartItems.map(item =>
-      item.id === productId
-        ? { ...item, quantity }
-        : item
-    ));
+
+    // Validasi stok jika maxStok diberikan
+    if (maxStok !== undefined && quantity > maxStok) {
+      if (showWarning) {
+        showWarning(`Quantity tidak boleh melebihi stok tersedia (${maxStok})`);
+      }
+      return;
+    }
+
+    setCartItems(
+      cartItems.map((item) =>
+        item.id === productId ? { ...item, quantity } : item
+      )
+    );
   };
 
-  const incrementQuantity = (productId) => {
-    const item = cartItems.find(i => i.id === productId);
+  const incrementQuantity = (productId, maxStok) => {
+    const item = cartItems.find((i) => i.id === productId);
     if (item) {
-      updateQuantity(productId, item.quantity + 1);
+      // Validasi stok sebelum increment
+      if (maxStok !== undefined && item.quantity >= maxStok) {
+        if (showWarning) {
+          showWarning(`Stok tidak mencukupi! Maksimal ${maxStok} item.`);
+        }
+        return;
+      }
+      updateQuantity(productId, item.quantity + 1, maxStok);
     }
   };
 
   const decrementQuantity = (productId) => {
-    const item = cartItems.find(i => i.id === productId);
+    const item = cartItems.find((i) => i.id === productId);
     if (item) {
       updateQuantity(productId, item.quantity - 1);
     }
@@ -57,7 +89,16 @@ export const useCart = () => {
   };
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.harga * item.quantity), 0);
+    return cartItems.reduce(
+      (total, item) => total + item.harga * item.quantity,
+      0
+    );
+  };
+
+  // Hitung stok tersisa untuk produk tertentu (stok database - quantity di keranjang)
+  const getAvailableStock = (productId, databaseStock) => {
+    const cartItem = cartItems.find((item) => item.id === productId);
+    return databaseStock - (cartItem ? cartItem.quantity : 0);
   };
 
   return {
@@ -70,5 +111,6 @@ export const useCart = () => {
     clearCart,
     getTotalItems,
     getTotalPrice,
+    getAvailableStock,
   };
 };

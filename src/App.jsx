@@ -6,18 +6,61 @@ import DataBarang from "./pages/DataBarang";
 import RiwayatTransaksi from "./pages/RiwayatTransaksi";
 import KelolaKaryawan from "./pages/KelolaKaryawan";
 import ProfilePage from "./pages/ProfilePage";
+import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/pilih-barang" element={<PilihBarang />} />
-        <Route path="/kelola-barang" element={<DataBarang />} />
-        <Route path="/laporan" element={<RiwayatTransaksi />} />
-        <Route path="/kelola-karyawan" element={<KelolaKaryawan />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pilih-barang"
+          element={
+            <ProtectedRoute>
+              <PilihBarang />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kelola-barang"
+          element={
+            <AdminRoute>
+              <DataBarang />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/laporan"
+          element={
+            <ProtectedRoute>
+              <RiwayatTransaksi />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kelola-karyawan"
+          element={
+            <AdminRoute>
+              <KelolaKaryawan />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

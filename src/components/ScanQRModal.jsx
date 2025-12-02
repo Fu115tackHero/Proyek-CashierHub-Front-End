@@ -1,13 +1,60 @@
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { FaQrcode, FaTimes } from "react-icons/fa";
 
-export const ScanQRModal = ({ onClose, onScanSuccess }) => {
+export const ScanQRModal = ({
+  onClose,
+  onScanSuccess,
+  fromCart = false,
+  isProcessing = false,
+}) => {
   const [scanning, setScanning] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [error, setError] = useState(null);
+  const [cooldown, setCooldown] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState("");
+  const [successFeedback, setSuccessFeedback] = useState(null);
   const html5QrCodeRef = useRef(null);
   const isMountedRef = useRef(true);
+  const audioRef = useRef(null);
+  const restartTimeoutRef = useRef(null);
+
+  // Function to play beep sound - bisa pakai file MP3 atau Web Audio API
+  const playBeep = () => {
+    try {
+      // CARA 1: Pakai file MP3 (uncomment code ini dan comment code Web Audio API)
+      // if (audioRef.current) {
+      //   audioRef.current.currentTime = 0;
+      //   audioRef.current.play().catch(() => {});
+      // }
+
+      // CARA 2: Web Audio API (default)
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+
+      const playTone = (freq, start, duration, type = "square") => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(
+          0.001,
+          ctx.currentTime + start + duration
+        );
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration + 0.01);
+      };
+
+      playTone(1700, 0.0, 0.06, "square");
+      playTone(1100, 0.08, 0.06, "square");
+    } catch (error) {
+      // Ignore audio errors
+    }
+  };
 
   const startScanning = async () => {
     try {
@@ -19,24 +66,105 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
       setScanning(true);
 
       const config = {
-        fps: 10,
-        qrbox: { width: 200, height: 200 },
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          // Dynamic qrbox size based on viewfinder
+          const minEdgePercentage = 0.7; // 70% of the smaller edge
+          const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          return {
+            width: qrboxSize,
+            height: qrboxSize,
+          };
+        },
         aspectRatio: 1.0,
+        // Support QR + common retail barcodes
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.CODABAR,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.AZTEC,
+        ],
+        // Improve detection stability
+        disableFlip: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+        // Prefer rear camera with decent resolution
+        videoConstraints: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       };
 
       await html5QrCodeRef.current.start(
         { facingMode: "environment" },
         config,
-        (decodedText) => {
-          if (!isMountedRef.current) return;
-          setScannedData(decodedText);
-          // Stop scanning after successful scan
-          if (html5QrCodeRef.current) {
-            html5QrCodeRef.current.stop().catch(() => {});
-            setScanning(false);
+        async (decodedText) => {
+          // CRITICAL: Check cooldown PERTAMA sebelum apapun!
+          if (!isMountedRef.current || cooldown) {
+            console.log("Scan ignored - cooldown active");
+            return;
           }
-          if (onScanSuccess) {
-            onScanSuccess(decodedText);
+
+          // Set cooldown SEBELUM proses apapun
+          setCooldown(true);
+
+          // Play beep sound
+          playBeep();
+
+          setScannedData(decodedText);
+          setLastScannedCode(decodedText);
+
+          // Jika scan dari cart, PAUSE scanner sementara
+          if (fromCart) {
+            // Stop scanner
+            if (html5QrCodeRef.current) {
+              html5QrCodeRef.current.stop().catch(() => {});
+              setScanning(false);
+            }
+
+            // Call success handler AND WAIT FOR RESULT
+            let result = { success: true }; // Default true if no return
+            if (onScanSuccess) {
+              const res = await onScanSuccess(decodedText);
+              if (res) result = res;
+            }
+
+            if (result.success) {
+              // Show success feedback ONLY if success
+              setSuccessFeedback(result.message || decodedText);
+            } else {
+              // Show error feedback if failed
+              setError(result.message || "Gagal memproses scan");
+            }
+
+            // Auto-restart scanner setelah 1.8 detik
+            restartTimeoutRef.current = setTimeout(async () => {
+              setSuccessFeedback(null);
+              setError(null); // Clear error too
+              setCooldown(false);
+              // Restart scanner
+              await startScanning();
+            }, 1800);
+          } else {
+            // Scan dari pencarian - langsung stop dan close
+            if (onScanSuccess) {
+              onScanSuccess(decodedText);
+            }
+            if (html5QrCodeRef.current) {
+              html5QrCodeRef.current.stop().catch(() => {});
+              setScanning(false);
+            }
           }
         },
         () => {
@@ -83,6 +211,11 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
       cleanupExecuted = true;
       isMountedRef.current = false;
 
+      // Clear restart timeout
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
+
       // Cleanup scanner safely
       if (html5QrCodeRef.current) {
         try {
@@ -107,15 +240,51 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center p-4">
-      {/* Backdrop - Covers everything */}
+    <div
+      className={`fixed inset-0 z-40 flex items-center justify-center p-4 ${
+        fromCart ? "pr-[25px]" : ""
+      }`}
+    >
+      {/* Audio element untuk MP3 - uncomment dan set src ke file MP3 */}
+      {/* <audio ref={audioRef} src="/sounds/beep.mp3" preload="auto" /> */}
+
+      {/* Backdrop - z-40 to cover everything including header, cart is z-50 so stays above */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={handleClose}
       ></div>
 
-      {/* Modal - Above backdrop, below cart */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col z-10">
+      {/* Processing Overlay - tampil saat sedang memproses scan */}
+      {isProcessing && fromCart && (
+        <div className="absolute inset-0 z-45 flex items-center justify-center">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 animate-pulse">
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="font-bold">Menambahkan ke keranjang...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - z-50, above everything */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col z-50">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="text-xl font-bold">Scan QR Code / Barcode</h2>
@@ -160,7 +329,7 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
                 )}
               </div>
 
-              {!scanning && !scannedData && (
+              {!scanning && !scannedData && !successFeedback && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <FaQrcode className="w-24 h-24 text-gray-300 mb-4" />
                   <p className="text-gray-600 font-semibold mb-4">
@@ -176,6 +345,39 @@ export const ScanQRModal = ({ onClose, onScanSuccess }) => {
                     <FaQrcode className="w-4 h-4" />
                     Mulai Scan
                   </button>
+                </div>
+              )}
+
+              {/* Success Feedback - tampil saat pause */}
+              {successFeedback && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                    <svg
+                      className="w-12 h-12 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="3"
+                        d="M5 13l4 4L19 7"
+                      ></path>
+                    </svg>
+                  </div>
+                  <p className="text-green-600 font-bold text-lg mb-2">
+                    ✓ Berhasil Ditambahkan!
+                  </p>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Kode:{" "}
+                    <span className="font-mono font-bold">
+                      {successFeedback}
+                    </span>
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    Menunggu scan berikutnya...
+                  </p>
                 </div>
               )}
             </div>

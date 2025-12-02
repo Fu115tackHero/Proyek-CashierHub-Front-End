@@ -1,5 +1,6 @@
 const PageButton = ({ active, children, onClick, disabled }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
     className={`
@@ -20,6 +21,7 @@ const PageButton = ({ active, children, onClick, disabled }) => (
 export const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   const pages = [];
 
+  // Logika untuk membuat array halaman dengan "..."
   if (totalPages <= 5) {
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i);
@@ -35,60 +37,63 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   }
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex gap-2">
-        {pages.map((page, index) => (
-          <PageButton
-            key={index}
-            active={page === currentPage}
-            onClick={() => typeof page === "number" && onPageChange(page)}
-            disabled={page === "..."}
-          >
-            {page}
-          </PageButton>
-        ))}
-      </div>
+    // FIX: Container netral (tanpa w-full/justify-end) dengan gap-2
+    <div className="flex items-center gap-2">
+      {/* Tombol PREVIOUS */}
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur-sm border border-blue-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 shadow-sm group"
+      >
+        <svg
+          className="w-5 h-5 text-[#1a509a] group-hover:scale-110 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-          className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-blue-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 shadow-sm group"
+      {/* ANGKA HALAMAN */}
+      {pages.map((page, index) => (
+        <PageButton
+          key={index}
+          active={page === currentPage}
+          onClick={() => typeof page === "number" && onPageChange(page)}
+          disabled={page === "..."}
         >
-          <svg
-            className="w-5 h-5 text-[#1a509a] group-hover:scale-110 transition-transform"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <button
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
-          className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-blue-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 shadow-sm group"
+          {page}
+        </PageButton>
+      ))}
+
+      {/* Tombol NEXT */}
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur-sm border border-blue-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 shadow-sm group"
+      >
+        <svg
+          className="w-5 h-5 text-[#1a509a] group-hover:scale-110 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          <svg
-            className="w-5 h-5 text-[#1a509a] group-hover:scale-110 transition-transform"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
     </div>
   );
 };

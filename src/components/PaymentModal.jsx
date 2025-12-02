@@ -5,12 +5,23 @@ import {
   FaCheckCircle,
   FaExclamationCircle,
 } from "react-icons/fa";
+import { API_ENDPOINTS } from "../config/api";
+import { useNotification } from "../hooks/useNotification";
 
-export const PaymentModal = ({ total, onClose, onSuccess }) => {
+export const PaymentModal = ({
+  total,
+  onClose,
+  onSuccess,
+  cartItems,
+  onTransactionComplete,
+}) => {
+  const { showError: showErrorNotification, NotificationComponent } =
+    useNotification();
   const [cashAmount, setCashAmount] = useState("");
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [change, setChange] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleCashChange = (e) => {
     const value = e.target.value.replace(/\D/g, "");
@@ -18,7 +29,7 @@ export const PaymentModal = ({ total, onClose, onSuccess }) => {
     setShowError(false);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const cash = parseInt(cashAmount) || 0;
 
     if (cash < total) {
@@ -28,7 +39,54 @@ export const PaymentModal = ({ total, onClose, onSuccess }) => {
 
     const calculatedChange = cash - total;
     setChange(calculatedChange);
-    setShowSuccess(true);
+
+    // Save transaction to database
+    setIsSaving(true);
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const payload = {
+        user_id: user?.id || 1,
+        total_price: total,
+        cash_amount: cash,
+        change_amount: calculatedChange,
+        items: cartItems.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.harga,
+        })),
+      };
+
+      const response = await fetch(API_ENDPOINTS.TRANSACTIONS, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Gagal menyimpan transaksi");
+      }
+
+      const result = await response.json();
+      console.log("Transaction saved:", result);
+
+      // Refresh products untuk update stok secara real-time
+      if (onTransactionComplete) {
+        await onTransactionComplete();
+      }
+
+      setShowSuccess(true);
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+      showErrorNotification(
+        "Gagal menyimpan transaksi: " + error.message,
+        "Transaksi Gagal"
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSuccessClose = () => {
@@ -181,17 +239,19 @@ export const PaymentModal = ({ total, onClose, onSuccess }) => {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!cashAmount}
+              disabled={!cashAmount || isSaving}
               className={`flex-1 py-3 rounded-xl font-bold transition-all ${
-                cashAmount
+                cashAmount && !isSaving
                   ? "bg-gradient-to-r from-[#5cb338] to-[#4d9a2e] text-white hover:shadow-lg"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              Konfirmasi
+              {isSaving ? "Menyimpan..." : "Konfirmasi"}
             </button>
           </div>
         </div>
+
+        <NotificationComponent />
       </div>
     </div>
   );

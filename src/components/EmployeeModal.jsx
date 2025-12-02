@@ -10,10 +10,15 @@ import {
 } from "react-icons/fa";
 
 export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
+  // Get current user untuk permission check
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isSuperAdmin = currentUser.role === "Super Admin";
+
   // Initialize form data from employee prop
   const initialFormData = employee
     ? {
         nama: employee.nama || "",
+        username: employee.username || "",
         email: employee.email || "",
         telepon: employee.telepon || "",
         alamat: employee.alamat || "",
@@ -22,6 +27,7 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
       }
     : {
         nama: "",
+        username: "",
         email: "",
         telepon: "",
         alamat: "",
@@ -36,6 +42,11 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
     const newErrors = {};
 
     if (!formData.nama.trim()) newErrors.nama = "Nama harus diisi";
+    if (!formData.username.trim()) {
+      newErrors.username = "Username harus diisi";
+    } else if (formData.username.length < 3) {
+      newErrors.username = "Username minimal 3 karakter";
+    }
     if (!formData.email.trim()) {
       newErrors.email = "Email harus diisi";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -45,6 +56,8 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
     if (!formData.alamat.trim()) newErrors.alamat = "Alamat harus diisi";
     if (!employee && !formData.password) {
       newErrors.password = "Password harus diisi untuk karyawan baru";
+    } else if (formData.password && formData.password.length < 6) {
+      newErrors.password = "Password minimal 6 karakter";
     }
 
     setErrors(newErrors);
@@ -89,6 +102,7 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
   const handleClose = () => {
     setFormData({
       nama: "",
+      username: "",
       email: "",
       telepon: "",
       alamat: "",
@@ -146,6 +160,27 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
           />
           {errors.nama && (
             <p className="text-red-500 text-sm mt-1">{errors.nama}</p>
+          )}
+        </div>
+
+        {/* Username */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <FaIdCard className="inline mr-2 text-[#1a509a]" />
+            Username
+          </label>
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            className={`w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a509a] transition-all ${
+              errors.username ? "border-red-500" : "border-gray-300"
+            }`}
+            placeholder="Masukkan username (min 3 karakter)"
+          />
+          {errors.username && (
+            <p className="text-red-500 text-sm mt-1">{errors.username}</p>
           )}
         </div>
 
@@ -225,10 +260,15 @@ export const EmployeeModal = ({ onClose, onSave, employee = null }) => {
             className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a509a] transition-all"
           >
             <option value="Kasir">Kasir</option>
-            <option value="Manager">Manager</option>
-            <option value="Admin">Admin</option>
-            <option value="Supervisor">Supervisor</option>
+            {/* Hanya Super Admin yang bisa menambah/edit Admin */}
+            {isSuperAdmin && <option value="Admin">Admin</option>}
           </select>
+          {!isSuperAdmin && (
+            <p className="text-xs text-gray-500 mt-1">
+              ℹ️ Admin hanya dapat menambahkan/mengelola karyawan dengan role
+              Kasir
+            </p>
+          )}
         </div>
 
         {/* Password */}
