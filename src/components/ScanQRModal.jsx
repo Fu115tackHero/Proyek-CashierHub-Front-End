@@ -242,7 +242,7 @@ export const ScanQRModal = ({
   return (
     <div
       className={`fixed inset-0 z-40 flex items-center justify-center p-4 ${
-        fromCart ? "pr-[340px]" : ""
+        fromCart ? "pr-[25px]" : ""
       }`}
     >
       {/* Audio element untuk MP3 - uncomment dan set src ke file MP3 */}

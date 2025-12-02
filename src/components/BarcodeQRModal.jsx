@@ -58,6 +58,9 @@ export const BarcodeQRModal = ({ onClose, product }) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
+    // Padding/margin putih di semua sisi (dalam pixel)
+    const padding = 40;
+
     if (activeTab === "barcode") {
       const svg = element.querySelector("svg");
       if (!svg) return;
@@ -70,11 +73,16 @@ export const BarcodeQRModal = ({ onClose, product }) => {
       const url = URL.createObjectURL(svgBlob);
 
       img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // Canvas lebih besar untuk menampung padding
+        canvas.width = img.width + padding * 2;
+        canvas.height = img.height + padding * 2;
+
+        // Isi canvas dengan warna putih
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+
+        // Gambar barcode di tengah dengan offset padding
+        ctx.drawImage(img, padding, padding);
 
         canvas.toBlob((blob) => {
           const link = document.createElement("a");
@@ -89,9 +97,16 @@ export const BarcodeQRModal = ({ onClose, product }) => {
       const img = element.querySelector("img");
       if (!img) return;
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+      // Canvas lebih besar untuk menampung padding
+      canvas.width = img.width + padding * 2;
+      canvas.height = img.height + padding * 2;
+
+      // Isi canvas dengan warna putih
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Gambar QR code di tengah dengan offset padding
+      ctx.drawImage(img, padding, padding);
 
       canvas.toBlob((blob) => {
         const link = document.createElement("a");
