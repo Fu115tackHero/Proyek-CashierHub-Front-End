@@ -63,7 +63,24 @@
     },
     build: {
       target: 'esnext',
-      outDir: 'build',
+      outDir: 'dist',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'radix-ui': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-select',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-tooltip',
+            ],
+            'icons': ['react-icons'],
+            'qrcode': ['html5-qrcode'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
     server: {
       open: true,
