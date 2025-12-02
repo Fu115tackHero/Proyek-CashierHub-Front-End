@@ -62,17 +62,9 @@ export default function PilihBarang() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
-    // Periodic refresh setiap 30 detik
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        refreshProducts();
-      }
-    }, 30000);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
-      clearInterval(intervalId);
     };
   }, [refreshProducts]);
 

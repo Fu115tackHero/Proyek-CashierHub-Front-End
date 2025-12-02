@@ -18,6 +18,13 @@ export const useEmployees = () => {
       }
       const data = await response.json();
 
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("API returned non-array data:", data);
+        setEmployees([]);
+        return;
+      }
+
       // Transform backend data to frontend format
       const transformedData = data.map((user) => ({
         id: user.id,
@@ -33,7 +40,7 @@ export const useEmployees = () => {
       setEmployees(transformedData);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      alert("Gagal memuat data karyawan: " + error.message);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }

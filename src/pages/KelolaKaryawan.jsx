@@ -47,17 +47,9 @@ export default function KelolaKaryawan() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
-    // Periodic refresh setiap 30 detik
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        refreshEmployees();
-      }
-    }, 30000);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
-      clearInterval(intervalId);
     };
   }, [refreshEmployees]);
 

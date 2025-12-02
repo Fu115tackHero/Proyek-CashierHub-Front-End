@@ -206,7 +206,7 @@ export const ProductModal = ({ onClose, onSave, product = null }) => {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               <FaDollarSign className="inline mr-2 text-[#1a509a]" />
-              Harga
+              Harga (Rp.)
             </label>
             <input
               type="number"
@@ -214,6 +214,7 @@ export const ProductModal = ({ onClose, onSave, product = null }) => {
               value={formData.harga}
               onChange={handleChange}
               min="0"
+              step="1000"
               className={`w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a509a] transition-all ${
                 errors.harga ? "border-red-500" : "border-gray-300"
               }`}

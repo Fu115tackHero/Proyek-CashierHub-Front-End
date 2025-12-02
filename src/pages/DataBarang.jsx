@@ -55,17 +55,9 @@ export default function DataBarang() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
-    // Periodic refresh setiap 30 detik untuk memastikan data tetap up-to-date
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        refreshProducts();
-      }
-    }, 30000); // 30 detik
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
-      clearInterval(intervalId);
     };
   }, [refreshProducts]);
 

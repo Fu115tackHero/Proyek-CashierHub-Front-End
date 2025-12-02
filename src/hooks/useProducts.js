@@ -21,6 +21,13 @@ export const useProducts = (options = {}) => {
       const response = await fetch(API_ENDPOINTS.PRODUCTS);
       const data = await response.json();
 
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("API returned non-array data:", data);
+        setAllProducts([]);
+        return;
+      }
+
       // Transform data dari backend ke format frontend
       const transformedData = data.map((product) => ({
         id: product.id,

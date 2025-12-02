@@ -4,7 +4,13 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
 import { TransactionDetailModal } from "../components/TransactionDetailModal";
-import { FaChartBar, FaMoneyBillWave, FaEye } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaMoneyBillWave,
+  FaEye,
+  FaFileDownload,
+  FaFileCsv,
+} from "react-icons/fa";
 import { API_ENDPOINTS } from "../config/api";
 
 export default function RiwayatTransaksi() {
@@ -35,6 +41,17 @@ export default function RiwayatTransaksi() {
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() => {
+    // Get Monday of current week
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff));
+    const year = monday.getFullYear();
+    const month = String(monday.getMonth() + 1).padStart(2, "0");
+    const date = String(monday.getDate()).padStart(2, "0");
+    return `${year}-${month}-${date}`;
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -94,17 +111,9 @@ export default function RiwayatTransaksi() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
-    // Periodic refresh setiap 30 detik untuk memastikan data transaksi terbaru
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        fetchTransactions();
-      }
-    }, 30000);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
-      clearInterval(intervalId);
     };
   }, []);
 
@@ -155,6 +164,254 @@ export default function RiwayatTransaksi() {
     navigate("/");
   };
 
+  // Export functions
+  const getExportFileName = () => {
+    let fileName = "Laporan_Penjualan";
+
+    // Add role info
+    if (!hasFullAccess) {
+      fileName += `_${currentUser.name.replace(/\s+/g, "_")}`;
+    } else if (selectedCashier !== "all") {
+      const cashier = cashiers.find((c) => c.id === parseInt(selectedCashier));
+      if (cashier) {
+        fileName += `_${cashier.name.replace(/\s+/g, "_")}`;
+      }
+    } else {
+      fileName += "_Semua_Kasir";
+    }
+
+    // Add period info
+    if (filterType === "daily") {
+      const date = new Date(selectedDate);
+      fileName += `_${date.getDate()}-${
+        date.getMonth() + 1
+      }-${date.getFullYear()}`;
+    } else if (filterType === "weekly") {
+      const startDate = new Date(selectedWeekStart);
+      fileName += `_Minggu_${startDate.getDate()}-${
+        startDate.getMonth() + 1
+      }-${startDate.getFullYear()}`;
+    } else if (filterType === "monthly") {
+      const monthName = new Date(0, selectedMonth - 1).toLocaleString("id-ID", {
+        month: "long",
+      });
+      fileName += `_${monthName}_${selectedYear}`;
+    } else if (filterType === "yearly") {
+      fileName += `_${selectedYear}`;
+    } else {
+      fileName += "_Semua_Periode";
+    }
+
+    return fileName;
+  };
+
+  const exportToCSV = async () => {
+    if (filteredTransactions.length === 0) {
+      alert("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    try {
+      setLoadingDetail(true);
+
+      // Fetch all transaction details
+      const detailPromises = filteredTransactions.map(async (trans) => {
+        try {
+          const response = await fetch(
+            `${API_ENDPOINTS.TRANSACTIONS}/${trans.id}`
+          );
+          if (response.ok) {
+            return await response.json();
+          }
+        } catch (error) {
+          console.error(`Error fetching transaction ${trans.id}:`, error);
+        }
+        return null;
+      });
+
+      const transactionDetails = await Promise.all(detailPromises);
+      const validDetails = transactionDetails.filter((d) => d !== null);
+
+      // CSV Headers
+      const headers = [
+        "No",
+        "Tanggal",
+        "Kasir",
+        "Nama Barang",
+        "Jumlah",
+        "Harga (Rp)",
+        "Subtotal (Rp)",
+        "Total Transaksi (Rp)",
+        "Uang Dibayar (Rp)",
+        "Kembalian (Rp)",
+      ];
+
+      // CSV Rows - detailed items
+      const rows = [];
+      validDetails.forEach((detail, index) => {
+        detail.items.forEach((item, itemIndex) => {
+          // Parse price safely, fallback to 0 if null/undefined
+          const price =
+            item.price_at_transaction !== null &&
+            item.price_at_transaction !== undefined
+              ? parseFloat(item.price_at_transaction)
+              : 0;
+          const subtotal =
+            item.subtotal !== null && item.subtotal !== undefined
+              ? parseFloat(item.subtotal)
+              : 0;
+          const totalAmount =
+            detail.total_amount !== null && detail.total_amount !== undefined
+              ? parseFloat(detail.total_amount)
+              : 0;
+          const cashAmount =
+            detail.cash_amount !== null && detail.cash_amount !== undefined
+              ? parseFloat(detail.cash_amount)
+              : 0;
+          const changeAmount =
+            detail.change_amount !== null && detail.change_amount !== undefined
+              ? parseFloat(detail.change_amount)
+              : 0;
+
+          rows.push([
+            itemIndex === 0 ? index + 1 : "",
+            itemIndex === 0 ? detail.transaction_date : "",
+            itemIndex === 0 ? detail.kasir_name : "",
+            item.product_name || "",
+            item.quantity || 0,
+            price, // Raw number, no formatting
+            subtotal, // Raw number, no formatting
+            itemIndex === 0 ? totalAmount : "", // Raw number, no formatting
+            itemIndex === 0 ? cashAmount : "", // Raw number, no formatting
+            itemIndex === 0 ? changeAmount : "", // Raw number, no formatting
+          ]);
+        });
+      });
+
+      // Add summary row
+      rows.push([]);
+      rows.push(["", "", "", "", "", "", "TOTAL PENDAPATAN:", totalPendapatan]);
+
+      // Convert to CSV string
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ].join("\n");
+
+      // Create and download file
+      const blob = new Blob(["\ufeff" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${getExportFileName()}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      alert("Gagal mengekspor data: " + error.message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const exportToJSON = async () => {
+    if (filteredTransactions.length === 0) {
+      alert("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    try {
+      setLoadingDetail(true);
+
+      // Fetch all transaction details
+      const detailPromises = filteredTransactions.map(async (trans) => {
+        try {
+          const response = await fetch(
+            `${API_ENDPOINTS.TRANSACTIONS}/${trans.id}`
+          );
+          if (response.ok) {
+            return await response.json();
+          }
+        } catch (error) {
+          console.error(`Error fetching transaction ${trans.id}:`, error);
+        }
+        return null;
+      });
+
+      const transactionDetails = await Promise.all(detailPromises);
+      const validDetails = transactionDetails.filter((d) => d !== null);
+
+      // Prepare export data with full details
+      const exportData = {
+        metadata: {
+          exported_at: new Date().toISOString(),
+          exported_by: currentUser.name,
+          role: currentUser.role,
+          filter: {
+            type: filterType,
+            period:
+              filterType === "daily"
+                ? selectedDate
+                : filterType === "weekly"
+                ? `Minggu ${selectedWeekStart}`
+                : filterType === "monthly"
+                ? `${selectedMonth}/${selectedYear}`
+                : filterType === "yearly"
+                ? selectedYear.toString()
+                : "all",
+            cashier: !hasFullAccess
+              ? currentUser.name
+              : selectedCashier !== "all"
+              ? cashiers.find((c) => c.id === parseInt(selectedCashier))?.name
+              : "all",
+          },
+          total_transactions: validDetails.length,
+          total_revenue: totalPendapatan,
+        },
+        transactions: validDetails.map((detail, index) => ({
+          no: index + 1,
+          id: detail.id,
+          transaction_date: detail.transaction_date,
+          kasir_name: detail.kasir_name,
+          kasir_username: detail.kasir_username,
+          total_amount: parseFloat(detail.total_amount),
+          cash_amount: parseFloat(detail.cash_amount),
+          change_amount: parseFloat(detail.change_amount),
+          items: detail.items.map((item) => ({
+            product_name: item.product_name,
+            quantity: parseInt(item.quantity),
+            price: parseFloat(item.price_at_transaction),
+            subtotal: parseFloat(item.subtotal),
+          })),
+        })),
+      };
+
+      // Create and download file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${getExportFileName()}.json`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting to JSON:", error);
+      alert("Gagal mengekspor data: " + error.message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const getFilteredTransactions = () => {
     let filtered = transactions;
 
@@ -192,6 +449,12 @@ export default function RiwayatTransaksi() {
           transDate.getMonth() === filterDate.getMonth() &&
           transDate.getFullYear() === filterDate.getFullYear()
         );
+      } else if (filterType === "weekly") {
+        const weekStart = new Date(selectedWeekStart);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
+        weekEnd.setHours(23, 59, 59, 999);
+        return transDate >= weekStart && transDate <= weekEnd;
       } else if (filterType === "monthly") {
         return (
           transDate.getMonth() + 1 === selectedMonth &&
@@ -311,6 +574,7 @@ export default function RiwayatTransaksi() {
               >
                 <option value="default">Semua Transaksi</option>
                 <option value="daily">Harian</option>
+                <option value="weekly">Mingguan</option>
                 <option value="monthly">Bulanan</option>
                 <option value="yearly">Tahunan</option>
               </select>
@@ -326,6 +590,23 @@ export default function RiwayatTransaksi() {
                   value={selectedDate}
                   onChange={(e) => {
                     setSelectedDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                />
+              </div>
+            )}
+
+            {filterType === "weekly" && (
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Pilih Minggu
+                </label>
+                <input
+                  type="date"
+                  value={selectedWeekStart}
+                  onChange={(e) => {
+                    setSelectedWeekStart(e.target.value);
                     setCurrentPage(1);
                   }}
                   className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
@@ -407,6 +688,30 @@ export default function RiwayatTransaksi() {
                 </select>
               </div>
             )}
+          </div>
+
+          {/* Export Buttons */}
+          <div className="mb-4 flex gap-3 justify-end">
+            <button
+              onClick={exportToCSV}
+              disabled={
+                loading || loadingDetail || filteredTransactions.length === 0
+              }
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaFileCsv className="w-5 h-5" />
+              {loadingDetail ? "Loading..." : "Export CSV"}
+            </button>
+            <button
+              onClick={exportToJSON}
+              disabled={
+                loading || loadingDetail || filteredTransactions.length === 0
+              }
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaFileDownload className="w-5 h-5" />
+              {loadingDetail ? "Loading..." : "Export JSON"}
+            </button>
           </div>
 
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden flex flex-col">
