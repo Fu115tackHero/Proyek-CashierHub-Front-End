@@ -4,6 +4,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
 import { TransactionDetailModal } from "../components/TransactionDetailModal";
+import { useNotification } from "../hooks/useNotification";
 import {
   FaChartBar,
   FaMoneyBillWave,
@@ -15,6 +16,7 @@ import { API_ENDPOINTS } from "../config/api";
 
 export default function RiwayatTransaksi() {
   const navigate = useNavigate();
+  const { showError, showWarning, NotificationComponent } = useNotification();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("default");
@@ -153,7 +155,7 @@ export default function RiwayatTransaksi() {
       setShowDetailModal(true);
     } catch (error) {
       console.error("Error fetching transaction detail:", error);
-      alert("Gagal memuat detail transaksi: " + error.message);
+      showError("Gagal memuat detail transaksi: " + error.message);
     } finally {
       setLoadingDetail(false);
     }
@@ -207,7 +209,7 @@ export default function RiwayatTransaksi() {
 
   const exportToCSV = async () => {
     if (filteredTransactions.length === 0) {
-      alert("Tidak ada data untuk diekspor");
+      showWarning("Tidak ada data untuk diekspor");
       return;
     }
 
@@ -313,7 +315,7 @@ export default function RiwayatTransaksi() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting to CSV:", error);
-      alert("Gagal mengekspor data: " + error.message);
+      showError("Gagal mengekspor data: " + error.message);
     } finally {
       setLoadingDetail(false);
     }
@@ -321,7 +323,7 @@ export default function RiwayatTransaksi() {
 
   const exportToJSON = async () => {
     if (filteredTransactions.length === 0) {
-      alert("Tidak ada data untuk diekspor");
+      showWarning("Tidak ada data untuk diekspor");
       return;
     }
 
@@ -406,7 +408,7 @@ export default function RiwayatTransaksi() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting to JSON:", error);
-      alert("Gagal mengekspor data: " + error.message);
+      showError("Gagal mengekspor data: " + error.message);
     } finally {
       setLoadingDetail(false);
     }
@@ -489,17 +491,41 @@ export default function RiwayatTransaksi() {
       <div className="flex-1 flex flex-col ml-56 overflow-hidden">
         <Header />
 
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Laporan Penjualan
-            </h1>
-            <p className="text-gray-600">
-              Pantau dan analisis performa penjualan Anda
-            </p>
+        <div className="flex-1 flex flex-col overflow-hidden p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                Laporan Penjualan
+              </h1>
+              <p className="text-gray-600 text-sm">
+                Pantau dan analisis performa penjualan Anda
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={exportToCSV}
+                disabled={
+                  loading || loadingDetail || filteredTransactions.length === 0
+                }
+                className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaFileCsv className="w-4 h-4" />
+                {loadingDetail ? "Loading..." : "Export CSV"}
+              </button>
+              <button
+                onClick={exportToJSON}
+                disabled={
+                  loading || loadingDetail || filteredTransactions.length === 0
+                }
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaFileDownload className="w-4 h-4" />
+                {loadingDetail ? "Loading..." : "Export JSON"}
+              </button>
+            </div>
           </div>
 
-          <div className="mb-6 flex gap-4 items-end">
+          <div className="mb-4 flex gap-4 items-end">
             {/* Filter Kasir - Only for Admin and Super Admin */}
             {hasFullAccess && (
               <div className="flex-1">
@@ -690,32 +716,8 @@ export default function RiwayatTransaksi() {
             )}
           </div>
 
-          {/* Export Buttons */}
-          <div className="mb-4 flex gap-3 justify-end">
-            <button
-              onClick={exportToCSV}
-              disabled={
-                loading || loadingDetail || filteredTransactions.length === 0
-              }
-              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaFileCsv className="w-5 h-5" />
-              {loadingDetail ? "Loading..." : "Export CSV"}
-            </button>
-            <button
-              onClick={exportToJSON}
-              disabled={
-                loading || loadingDetail || filteredTransactions.length === 0
-              }
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaFileDownload className="w-5 h-5" />
-              {loadingDetail ? "Loading..." : "Export JSON"}
-            </button>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden flex flex-col">
-            <div className="overflow-auto" style={{ minHeight: "400px" }}>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="overflow-auto flex-1">
               {loading ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="flex flex-col items-center gap-3">
@@ -735,8 +737,8 @@ export default function RiwayatTransaksi() {
                   </div>
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0">
+                <table className="w-full relative">
+                  <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0 z-10">
                     <tr className="border-b border-blue-400">
                       <th className="text-left py-4 px-6 font-bold text-white uppercase tracking-wider text-sm">
                         No
@@ -822,6 +824,8 @@ export default function RiwayatTransaksi() {
           }}
         />
       )}
+
+      <NotificationComponent />
     </div>
   );
 }

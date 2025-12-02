@@ -5,10 +5,31 @@ import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
 import { EmployeeModal } from "../components/EmployeeModal";
 import { useEmployees } from "../hooks/useEmployees";
-import { FaSearch, FaPlus, FaEdit, FaTrash, FaUsers } from "react-icons/fa";
+import { useNotification } from "../hooks/useNotification";
+import { API_ENDPOINTS } from "../config/api";
+import {
+  FaSearch,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaUsers,
+  FaUserTie,
+  FaUserShield,
+  FaUser,
+  FaTrophy,
+  FaChevronDown,
+  FaChevronUp,
+} from "react-icons/fa";
 
 export default function KelolaKaryawan() {
   const navigate = useNavigate();
+  const {
+    showSuccess,
+    showError,
+    showWarning,
+    showConfirmation,
+    NotificationComponent,
+  } = useNotification();
   const {
     employees,
     loading,
@@ -26,6 +47,28 @@ export default function KelolaKaryawan() {
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [stats, setStats] = useState({
+    roleCounts: [],
+    mostActive: [],
+  });
+
+  // Fetch stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.USER_STATS);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, [employees]); // Refresh when employees change
 
   // Get current user untuk permission check
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -71,7 +114,7 @@ export default function KelolaKaryawan() {
       isAdmin &&
       (employee.posisi === "Admin" || employee.posisi === "Super Admin")
     ) {
-      alert(
+      showWarning(
         "Admin tidak memiliki izin untuk mengedit karyawan dengan role Admin atau Super Admin."
       );
       return;
@@ -84,7 +127,7 @@ export default function KelolaKaryawan() {
   const handleDelete = async (employee) => {
     // Admin tidak bisa hapus diri sendiri
     if (employee.id === currentUser.id) {
-      alert("Anda tidak dapat menghapus akun Anda sendiri!");
+      showWarning("Anda tidak dapat menghapus akun Anda sendiri!");
       return;
     }
 
@@ -93,7 +136,7 @@ export default function KelolaKaryawan() {
       isAdmin &&
       (employee.posisi === "Admin" || employee.posisi === "Super Admin")
     ) {
-      alert(
+      showWarning(
         "Admin tidak memiliki izin untuk menghapus karyawan dengan role Admin atau Super Admin."
       );
       return;
@@ -101,21 +144,25 @@ export default function KelolaKaryawan() {
 
     // Super Admin tidak bisa hapus diri sendiri
     if (isSuperAdmin && employee.id === currentUser.id) {
-      alert("Anda tidak dapat menghapus akun Anda sendiri!");
+      showWarning("Anda tidak dapat menghapus akun Anda sendiri!");
       return;
     }
 
-    if (window.confirm(`Apakah Anda yakin ingin menghapus ${employee.nama}?`)) {
-      setIsProcessing(true);
-      const result = await deleteEmployee(employee.id);
-      setIsProcessing(false);
+    showConfirmation({
+      title: "Konfirmasi Hapus",
+      message: `Apakah Anda yakin ingin menghapus ${employee.nama}?`,
+      onConfirm: async () => {
+        setIsProcessing(true);
+        const result = await deleteEmployee(employee.id);
+        setIsProcessing(false);
 
-      if (result.success) {
-        alert("Karyawan berhasil dihapus!");
-      } else {
-        alert("Gagal menghapus karyawan: " + result.error);
-      }
-    }
+        if (result.success) {
+          showSuccess("Karyawan berhasil dihapus!");
+        } else {
+          showError("Gagal menghapus karyawan: " + result.error);
+        }
+      },
+    });
   };
 
   const handleSaveEmployee = async (employeeData) => {
@@ -131,7 +178,7 @@ export default function KelolaKaryawan() {
     setIsProcessing(false);
 
     if (result.success) {
-      alert(
+      showSuccess(
         editingEmployee
           ? "Karyawan berhasil diupdate!"
           : "Karyawan berhasil ditambahkan!"
@@ -161,7 +208,7 @@ export default function KelolaKaryawan() {
       setShowEmployeeModal(false);
       setEditingEmployee(null);
     } else {
-      alert(`Gagal: ${result.error || "Terjadi kesalahan"}`);
+      showError(`Gagal: ${result.error || "Terjadi kesalahan"}`);
     }
   };
 
@@ -172,7 +219,7 @@ export default function KelolaKaryawan() {
       <div className="flex-1 flex flex-col ml-56 overflow-hidden">
         <Header username="JoeMama" />
 
-        <div className="flex-1 p-4 overflow-auto flex flex-col">
+        <div className="flex-1 p-4 flex flex-col overflow-hidden">
           {/* Page Title */}
           <div className="mb-4 flex items-center gap-2">
             <div className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] p-2 rounded-lg shadow-md">
@@ -181,6 +228,144 @@ export default function KelolaKaryawan() {
             <h1 className="text-2xl font-bold text-gray-800">
               Kelola Karyawan
             </h1>
+          </div>
+
+          {/* Collapsible Info Dashboard */}
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+            {/* Header / Summary Bar (Always Visible) */}
+            <div
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+            >
+              <div className="flex flex-wrap items-center gap-4 md:gap-8">
+                <h2 className="font-bold text-gray-700 text-sm mr-2">
+                  Dashboard Ringkasan
+                </h2>
+
+                {/* Summary Item 1: Total Employees */}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-blue-100 p-1 rounded-md">
+                    <FaUsers className="text-blue-600 w-3 h-3" />
+                  </div>
+                  <span className="text-gray-600">
+                    <span className="font-bold text-gray-800">
+                      {stats.roleCounts.reduce(
+                        (acc, curr) => acc + parseInt(curr.count),
+                        0
+                      )}
+                    </span>{" "}
+                    Total Karyawan
+                  </span>
+                </div>
+
+                {/* Summary Item 2: Top Sales */}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-yellow-100 p-1 rounded-md">
+                    <FaTrophy className="text-yellow-600 w-3 h-3" />
+                  </div>
+                  <span className="text-gray-600">
+                    Top Sales:{" "}
+                    <span className="font-bold text-gray-800">
+                      {stats.mostActive[0]?.name || "-"}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-gray-400">
+                {isStatsExpanded ? <FaChevronUp /> : <FaChevronDown />}
+              </div>
+            </div>
+
+            {/* Expanded Content */}
+            {isStatsExpanded && (
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Role Counts */}
+                  {["Super Admin", "Admin", "Kasir"].map((role) => {
+                    const count =
+                      stats.roleCounts.find((r) => r.role === role)?.count || 0;
+                    let Icon = FaUser;
+                    let color = "blue";
+                    if (role === "Super Admin") {
+                      Icon = FaUserShield;
+                      color = "purple";
+                    } else if (role === "Admin") {
+                      Icon = FaUserTie;
+                      color = "indigo";
+                    } else {
+                      Icon = FaUser;
+                      color = "teal";
+                    }
+
+                    return (
+                      <div
+                        key={role}
+                        className={`bg-white rounded-xl shadow-sm border border-${color}-100 p-4 flex items-center gap-4`}
+                      >
+                        <div className={`bg-${color}-100 p-3 rounded-full`}>
+                          <Icon className={`text-${color}-600 w-6 h-6`} />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
+                            {role}
+                          </p>
+                          <h3 className="text-2xl font-bold text-gray-800">
+                            {count}
+                          </h3>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Most Active */}
+                  <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 md:col-span-1">
+                    <div className="flex items-center gap-2 mb-3 border-b border-yellow-50 pb-2">
+                      <div className="bg-yellow-100 p-1.5 rounded-lg">
+                        <FaTrophy className="text-yellow-600 w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 text-sm">
+                        Top Sales
+                      </h3>
+                    </div>
+                    <div className="space-y-3 max-h-40 overflow-y-auto custom-scrollbar">
+                      {stats.mostActive.length > 0 ? (
+                        stats.mostActive.slice(0, 3).map((user, index) => (
+                          <div
+                            key={user.id}
+                            className="flex items-center gap-3"
+                          >
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                index === 0
+                                  ? "bg-yellow-400"
+                                  : index === 1
+                                  ? "bg-gray-400"
+                                  : "bg-orange-400"
+                              }`}
+                            >
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">
+                                {user.name}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user.total_transactions} Transaksi
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-400 text-xs italic">
+                          Belum ada data penjualan
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Search and Add Button */}
@@ -206,13 +391,10 @@ export default function KelolaKaryawan() {
           </div>
 
           {/* Employee Table */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex-1 flex flex-col">
-            <div
-              className="overflow-auto flex-1"
-              style={{ minHeight: "400px" }}
-            >
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="overflow-auto flex-1">
+              <table className="w-full relative">
+                <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0 z-10">
                   <tr>
                     <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
                       No
@@ -363,7 +545,7 @@ export default function KelolaKaryawan() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="py-2 px-4 bg-gray-50 border-t border-gray-200">
               <div className="flex items-center justify-start">
                 <Pagination
                   currentPage={currentPage}
@@ -384,6 +566,8 @@ export default function KelolaKaryawan() {
           onSave={handleSaveEmployee}
         />
       )}
+
+      <NotificationComponent />
     </div>
   );
 }

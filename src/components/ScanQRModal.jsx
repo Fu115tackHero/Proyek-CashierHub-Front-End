@@ -67,7 +67,16 @@ export const ScanQRModal = ({
 
       const config = {
         fps: 15,
-        qrbox: { width: 240, height: 240 },
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          // Dynamic qrbox size based on viewfinder
+          const minEdgePercentage = 0.7; // 70% of the smaller edge
+          const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          return {
+            width: qrboxSize,
+            height: qrboxSize,
+          };
+        },
         aspectRatio: 1.0,
         // Support QR + common retail barcodes
         formatsToSupport: [
@@ -76,8 +85,13 @@ export const ScanQRModal = ({
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.CODABAR,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.AZTEC,
         ],
         // Improve detection stability
         disableFlip: true,
@@ -95,7 +109,7 @@ export const ScanQRModal = ({
       await html5QrCodeRef.current.start(
         { facingMode: "environment" },
         config,
-        (decodedText) => {
+        async (decodedText) => {
           // CRITICAL: Check cooldown PERTAMA sebelum apapun!
           if (!isMountedRef.current || cooldown) {
             console.log("Scan ignored - cooldown active");
@@ -119,17 +133,25 @@ export const ScanQRModal = ({
               setScanning(false);
             }
 
-            // Show success feedback
-            setSuccessFeedback(decodedText);
-
-            // Call success handler
+            // Call success handler AND WAIT FOR RESULT
+            let result = { success: true }; // Default true if no return
             if (onScanSuccess) {
-              onScanSuccess(decodedText);
+              const res = await onScanSuccess(decodedText);
+              if (res) result = res;
+            }
+
+            if (result.success) {
+              // Show success feedback ONLY if success
+              setSuccessFeedback(result.message || decodedText);
+            } else {
+              // Show error feedback if failed
+              setError(result.message || "Gagal memproses scan");
             }
 
             // Auto-restart scanner setelah 1.8 detik
             restartTimeoutRef.current = setTimeout(async () => {
               setSuccessFeedback(null);
+              setError(null); // Clear error too
               setCooldown(false);
               // Restart scanner
               await startScanning();

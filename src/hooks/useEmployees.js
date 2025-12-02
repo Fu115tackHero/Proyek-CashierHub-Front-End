@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { API_ENDPOINTS } from "../config/api";
 
 export const useEmployees = () => {
@@ -9,7 +9,7 @@ export const useEmployees = () => {
   const itemsPerPage = 7;
 
   // Fetch employees from API
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.USERS);
@@ -44,27 +44,32 @@ export const useEmployees = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [fetchEmployees]);
 
   // Filter and pagination
-  const filteredEmployees = employees.filter(
-    (emp) =>
-      emp.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.posisi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (emp.username &&
-        emp.username.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(
+      (emp) =>
+        emp.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.posisi.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (emp.username &&
+          emp.username.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [employees, searchQuery]);
 
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const paginatedEmployees = filteredEmployees.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+
+  const paginatedEmployees = useMemo(() => {
+    return filteredEmployees.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredEmployees, currentPage]);
 
   // Add employee - POST to API
   const addEmployee = async (employeeData) => {

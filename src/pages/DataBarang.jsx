@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Pagination } from "../components/Pagination";
 import { useProducts } from "../hooks/useProducts";
+import { useNotification } from "../hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { ProductModal } from "../components/ProductModal";
 import { BarcodeQRModal } from "../components/BarcodeQRModal";
 import { ScanQRModal } from "../components/ScanQRModal";
+import { API_ENDPOINTS } from "../config/api";
 import {
   FaSearch,
   FaPlus,
@@ -14,10 +16,17 @@ import {
   FaTrash,
   FaBox,
   FaBarcode,
+  FaExclamationTriangle,
+  FaChartLine,
+  FaClock,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 
 export default function DataBarang() {
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirmation, NotificationComponent } =
+    useNotification();
   const {
     products,
     allProducts, // FIX: Ambil semua produk untuk scan
@@ -39,6 +48,29 @@ export default function DataBarang() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [stats, setStats] = useState({
+    lowStock: [],
+    bestSelling: [],
+    newest: [],
+  });
+
+  // Fetch stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.PRODUCT_STATS);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, [products]); // Refresh when products change
 
   // Auto-refresh data ketika halaman menjadi visible/focused
   useEffect(() => {
@@ -61,6 +93,22 @@ export default function DataBarang() {
     };
   }, [refreshProducts]);
 
+  // Calculate effective low stock from allProducts (Frontend Fallback/Sync)
+  const effectiveLowStock = useMemo(() => {
+    if (allProducts.length > 0) {
+      return allProducts
+        .filter((p) => p.stok <= 20)
+        .sort((a, b) => a.stok - b.stok)
+        .slice(0, 50)
+        .map((p) => ({
+          id: p.id,
+          name: p.nama,
+          stock: p.stok,
+        }));
+    }
+    return stats.lowStock;
+  }, [allProducts, stats.lowStock]);
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/");
@@ -72,17 +120,21 @@ export default function DataBarang() {
   };
 
   const handleDelete = async (product) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus ${product.nama}?`)) {
-      setIsProcessing(true);
-      const result = await deleteProduct(product.id);
-      setIsProcessing(false);
+    showConfirmation({
+      title: "Konfirmasi Hapus",
+      message: `Apakah Anda yakin ingin menghapus ${product.nama}?`,
+      onConfirm: async () => {
+        setIsProcessing(true);
+        const result = await deleteProduct(product.id);
+        setIsProcessing(false);
 
-      if (result.success) {
-        alert("Produk berhasil dihapus!");
-      } else {
-        alert(result.message || "Gagal menghapus produk");
-      }
-    }
+        if (result.success) {
+          showSuccess("Produk berhasil dihapus!");
+        } else {
+          showError(result.message || "Gagal menghapus produk");
+        }
+      },
+    });
   };
 
   const handleAddNew = () => {
@@ -104,13 +156,13 @@ export default function DataBarang() {
 
     if (result.success) {
       setShowProductModal(false);
-      alert(
+      showSuccess(
         editingProduct
           ? "Produk berhasil diupdate!"
           : "Produk berhasil ditambahkan!"
       );
     } else {
-      alert(result.message || "Terjadi kesalahan");
+      showError(result.message || "Terjadi kesalahan");
     }
   };
 
@@ -130,8 +182,10 @@ export default function DataBarang() {
       setShowScanQRModal(false);
       setSearchQuery(decodedText);
       setCurrentPage(1);
+      return { success: true, message: "Produk ditemukan" };
     } else {
-      alert("Produk tidak ditemukan!");
+      showError("Produk tidak ditemukan!");
+      return { success: false, message: "Produk tidak ditemukan" };
     }
   };
 
@@ -142,12 +196,176 @@ export default function DataBarang() {
       <div className="flex-1 flex flex-col ml-56 overflow-hidden">
         <Header username="JoeMama" />
 
-        <div className="flex-1 p-4 overflow-auto flex flex-col">
+        <div className="flex-1 p-4 flex flex-col overflow-hidden">
           <div className="mb-4 flex items-center gap-2">
             <div className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] p-2 rounded-lg shadow-md">
               <FaBox className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-800">Kelola Barang</h1>
+          </div>
+
+          {/* Collapsible Info Dashboard */}
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+            {/* Header / Summary Bar (Always Visible) */}
+            <div
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+            >
+              <div className="flex flex-wrap items-center gap-4 md:gap-8">
+                <h2 className="font-bold text-gray-700 text-sm mr-2">
+                  Dashboard Ringkasan
+                </h2>
+
+                {/* Summary Item 1: Low Stock */}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-red-100 p-1 rounded-md">
+                    <FaExclamationTriangle className="text-red-500 w-3 h-3" />
+                  </div>
+                  <span className="text-gray-600">
+                    <span className="font-bold text-gray-800">
+                      {effectiveLowStock.length}
+                    </span>{" "}
+                    Stok Menipis
+                  </span>
+                </div>
+
+                {/* Summary Item 2: Best Selling */}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-green-100 p-1 rounded-md">
+                    <FaChartLine className="text-green-500 w-3 h-3" />
+                  </div>
+                  <span className="text-gray-600">
+                    Top:{" "}
+                    <span className="font-bold text-gray-800">
+                      {stats.bestSelling[0]?.name || "-"}
+                    </span>
+                  </span>
+                </div>
+
+                {/* Summary Item 3: Newest */}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-blue-100 p-1 rounded-md">
+                    <FaClock className="text-blue-500 w-3 h-3" />
+                  </div>
+                  <span className="text-gray-600">
+                    <span className="font-bold text-gray-800">
+                      {stats.newest.length}
+                    </span>{" "}
+                    Produk Baru
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-gray-400">
+                {isStatsExpanded ? <FaChevronUp /> : <FaChevronDown />}
+              </div>
+            </div>
+
+            {/* Expanded Content */}
+            {isStatsExpanded && (
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Low Stock */}
+                  <div className="bg-white rounded-xl shadow-sm border border-red-100 p-4">
+                    <div className="flex items-center gap-2 mb-3 border-b border-red-50 pb-2">
+                      <div className="bg-red-100 p-1.5 rounded-lg">
+                        <FaExclamationTriangle className="text-red-500 w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 text-sm">
+                        Stok Menipis
+                      </h3>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                      {effectiveLowStock.length > 0 ? (
+                        effectiveLowStock.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex justify-between items-center text-sm"
+                          >
+                            <span className="text-gray-600 truncate max-w-[70%]">
+                              {item.name}
+                            </span>
+                            <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                              {item.stock}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-400 text-xs italic">
+                          Stok aman semua
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Best Selling */}
+                  <div className="bg-white rounded-xl shadow-sm border border-green-100 p-4">
+                    <div className="flex items-center gap-2 mb-3 border-b border-green-50 pb-2">
+                      <div className="bg-green-100 p-1.5 rounded-lg">
+                        <FaChartLine className="text-green-500 w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 text-sm">
+                        Produk Laris
+                      </h3>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                      {stats.bestSelling.length > 0 ? (
+                        stats.bestSelling.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex justify-between items-center text-sm"
+                          >
+                            <span className="text-gray-600 truncate max-w-[70%]">
+                              {item.name}
+                            </span>
+                            <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                              {item.total_sold} terjual
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-400 text-xs italic">
+                          Belum ada data penjualan
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Newest */}
+                  <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-4">
+                    <div className="flex items-center gap-2 mb-3 border-b border-blue-50 pb-2">
+                      <div className="bg-blue-100 p-1.5 rounded-lg">
+                        <FaClock className="text-blue-500 w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 text-sm">
+                        Produk Terbaru
+                      </h3>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                      {stats.newest.length > 0 ? (
+                        stats.newest.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex justify-between items-center text-sm"
+                          >
+                            <span className="text-gray-600 truncate max-w-[70%]">
+                              {item.name}
+                            </span>
+                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                              Rp {parseInt(item.price).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-400 text-xs italic">
+                          Belum ada produk
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 mb-4">
@@ -178,13 +396,10 @@ export default function DataBarang() {
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex-1 flex flex-col">
-            <div
-              className="overflow-auto flex-1"
-              style={{ minHeight: "400px" }}
-            >
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="overflow-auto flex-1">
+              <table className="w-full relative">
+                <thead className="bg-gradient-to-r from-[#1a509a] to-[#2d6bc4] sticky top-0 z-10">
                   <tr>
                     <th className="text-left py-3 px-4 text-xs font-bold text-white uppercase">
                       No
@@ -302,7 +517,7 @@ export default function DataBarang() {
               </table>
             </div>
 
-            <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="py-2 px-4 bg-gray-50 border-t border-gray-200">
               <div className="flex items-center justify-start">
                 <Pagination
                   currentPage={currentPage}
@@ -336,6 +551,8 @@ export default function DataBarang() {
           onScanSuccess={handleScanQRSuccess}
         />
       )}
+
+      <NotificationComponent />
     </div>
   );
 }

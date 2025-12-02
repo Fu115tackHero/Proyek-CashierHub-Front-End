@@ -5,6 +5,7 @@ import { Pagination } from "../components/Pagination";
 import { CartSidebar } from "../components/CartSidebar";
 import { useProducts } from "../hooks/useProducts";
 import { useCart } from "../hooks/useCart";
+import { useNotification } from "../hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaQrcode, FaShoppingCart } from "react-icons/fa";
 import { ScanQRModal } from "../components/ScanQRModal";
@@ -13,6 +14,7 @@ import { StrukPembayaran } from "../components/StrukPembayaran";
 
 export default function PilihBarang() {
   const navigate = useNavigate();
+  const { showWarning, showError, NotificationComponent } = useNotification();
   const {
     products,
     allProducts, // FIX: Ambil semua produk (tidak di-paginate) untuk scan
@@ -34,7 +36,7 @@ export default function PilihBarang() {
     clearCart,
     getTotalPrice,
     getAvailableStock,
-  } = useCart();
+  } = useCart(showWarning);
 
   const [showScanModal, setShowScanModal] = useState(false);
   const [scanModalSource, setScanModalSource] = useState("search"); // 'search' or 'cart'
@@ -98,7 +100,7 @@ export default function PilihBarang() {
 
   const handleScanSuccess = (decodedText) => {
     // Cegah scan berulang terlalu cepat
-    if (isProcessingScan) return;
+    if (isProcessingScan) return { success: false, message: "Processing..." };
 
     console.log("Scanned:", decodedText);
     console.log("Searching in", allProducts.length, "products (not paginated)");
@@ -126,25 +128,32 @@ export default function PilihBarang() {
           if (availableStock > 0) {
             // addToCart sudah handle increment otomatis jika item ada
             addToCart(foundProduct);
-          } else {
-            alert(`Stok ${foundProduct.nama} tidak cukup!`);
-          }
+            
+            // Unlock setelah 800ms
+            setTimeout(() => {
+              setIsProcessingScan(false);
+            }, 800);
 
-          // Unlock setelah 800ms (cooldown scanner sudah 1.5 detik)
-          setTimeout(() => {
+            return { success: true, message: foundProduct.nama };
+          } else {
+            showWarning(`Stok ${foundProduct.nama} tidak cukup!`);
             setIsProcessingScan(false);
-          }, 800);
+            return { success: false, message: "Stok tidak cukup" };
+          }
         } else {
-          alert("Stok produk habis!");
+          showWarning("Stok produk habis!");
+          return { success: false, message: "Stok habis" };
         }
       } else {
         // Scan dari pencarian - close modal, tampilkan hasil
         setShowScanModal(false);
         setSearchQuery(decodedText);
         setCurrentPage(1);
+        return { success: true, message: "Produk ditemukan" };
       }
     } else {
-      alert("Produk tidak ditemukan!");
+      showError("Produk tidak ditemukan!");
+      return { success: false, message: "Produk tidak ditemukan" };
     }
   };
 
@@ -365,6 +374,8 @@ export default function PilihBarang() {
           onClose={() => setShowStrukModal(false)}
         />
       )}
+
+      <NotificationComponent />
     </div>
   );
 }

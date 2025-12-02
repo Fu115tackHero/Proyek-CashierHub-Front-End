@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { API_ENDPOINTS } from "../config/api";
 
 export const useProducts = (options = {}) => {
@@ -56,26 +56,30 @@ export const useProducts = (options = {}) => {
   }, [fetchProducts]);
 
   // Filter products based on search query AND optionally exclude out of stock
-  const filteredProducts = allProducts.filter((product) => {
-    // Filter by search query
-    // FIX: Convert kode to string to handle numeric codes consistently
-    const matchesSearch =
-      product.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.jenis.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(product.kode).toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredProducts = useMemo(() => {
+    return allProducts.filter((product) => {
+      // Filter by search query
+      // FIX: Convert kode to string to handle numeric codes consistently
+      const matchesSearch =
+        product.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.jenis.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(product.kode).toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Filter by stock if hideOutOfStock is true
-    const hasStock = hideOutOfStock ? product.stok > 0 : true;
+      // Filter by stock if hideOutOfStock is true
+      const hasStock = hideOutOfStock ? product.stok > 0 : true;
 
-    return matchesSearch && hasStock;
-  });
+      return matchesSearch && hasStock;
+    });
+  }, [allProducts, searchQuery, hideOutOfStock]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredProducts, currentPage]);
 
   // Add Product
   const addProduct = async (productData) => {
@@ -185,6 +189,11 @@ export const useProducts = (options = {}) => {
     }
   };
 
+  // Memoized refresh to avoid recreating on every render (prevents effect loops & repeated listeners)
+  const refreshProducts = useCallback(() => {
+    fetchProducts(true);
+  }, [fetchProducts]);
+
   return {
     products: paginatedProducts,
     allProducts: filteredProducts,
@@ -197,7 +206,6 @@ export const useProducts = (options = {}) => {
     addProduct,
     updateProduct,
     deleteProduct,
-    // Tetap sediakan fungsi refresh manual (default loading=true)
-    refreshProducts: () => fetchProducts(true),
+    refreshProducts,
   };
 };

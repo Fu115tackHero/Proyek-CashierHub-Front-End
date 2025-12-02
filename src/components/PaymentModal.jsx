@@ -6,6 +6,7 @@ import {
   FaExclamationCircle,
 } from "react-icons/fa";
 import { API_ENDPOINTS } from "../config/api";
+import { useNotification } from "../hooks/useNotification";
 
 export const PaymentModal = ({
   total,
@@ -14,6 +15,8 @@ export const PaymentModal = ({
   cartItems,
   onTransactionComplete,
 }) => {
+  const { showError: showErrorNotification, NotificationComponent } =
+    useNotification();
   const [cashAmount, setCashAmount] = useState("");
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -77,7 +80,10 @@ export const PaymentModal = ({
       setShowSuccess(true);
     } catch (error) {
       console.error("Error saving transaction:", error);
-      alert("Gagal menyimpan transaksi: " + error.message);
+      showErrorNotification(
+        "Gagal menyimpan transaksi: " + error.message,
+        "Transaksi Gagal"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -244,6 +250,8 @@ export const PaymentModal = ({
             </button>
           </div>
         </div>
+
+        <NotificationComponent />
       </div>
     </div>
   );

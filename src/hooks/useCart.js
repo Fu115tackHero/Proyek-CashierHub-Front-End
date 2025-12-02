@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const useCart = () => {
+export const useCart = (showWarning) => {
   const [cartItems, setCartItems] = useState([]);
 
   const addToCart = (product) => {
@@ -10,9 +10,11 @@ export const useCart = () => {
       if (existingItem) {
         // Validasi: quantity di keranjang tidak boleh melebihi stok database
         if (existingItem.quantity >= product.stok) {
-          alert(
-            `Stok ${product.nama} tidak mencukupi! Tersisa ${product.stok} di database.`
-          );
+          if (showWarning) {
+            showWarning(
+              `Stok ${product.nama} tidak mencukupi! Tersisa ${product.stok} di database.`
+            );
+          }
           return prevCartItems; // Return state lama, tidak ada perubahan
         }
         return prevCartItems.map((item) =>
@@ -22,7 +24,9 @@ export const useCart = () => {
         );
       } else {
         if (product.stok < 1) {
-          alert(`Stok ${product.nama} habis!`);
+          if (showWarning) {
+            showWarning(`Stok ${product.nama} habis!`);
+          }
           return prevCartItems; // Return state lama
         }
         return [...prevCartItems, { ...product, quantity: 1 }];
@@ -42,7 +46,9 @@ export const useCart = () => {
 
     // Validasi stok jika maxStok diberikan
     if (maxStok !== undefined && quantity > maxStok) {
-      alert(`Quantity tidak boleh melebihi stok tersedia (${maxStok})`);
+      if (showWarning) {
+        showWarning(`Quantity tidak boleh melebihi stok tersedia (${maxStok})`);
+      }
       return;
     }
 
@@ -58,7 +64,9 @@ export const useCart = () => {
     if (item) {
       // Validasi stok sebelum increment
       if (maxStok !== undefined && item.quantity >= maxStok) {
-        alert(`Stok tidak mencukupi! Maksimal ${maxStok} item.`);
+        if (showWarning) {
+          showWarning(`Stok tidak mencukupi! Maksimal ${maxStok} item.`);
+        }
         return;
       }
       updateQuantity(productId, item.quantity + 1, maxStok);

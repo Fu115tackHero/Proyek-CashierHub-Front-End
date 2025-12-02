@@ -108,14 +108,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Info Message */}
-            <div className="mb-6 bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-xl shadow-lg">
-              <p className="text-xs font-medium mb-1">Demo Login:</p>
-              <p className="text-xs">Admin: admin / admin123</p>
-              <p className="text-xs">Kasir: budi / budi123</p>
-              <p className="text-xs">Kasir: ahmad / ahmad123</p>
-            </div>
-
             {/* Username */}
             <div className="mb-6">
               <label className="block text-white text-lg font-semibold mb-3 tracking-wide">

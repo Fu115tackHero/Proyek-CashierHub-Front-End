@@ -4,9 +4,17 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { profileSvgPaths } from "../assets/svg-paths";
 import { API_ENDPOINTS } from "../config/api";
+import { useNotification } from "../hooks/useNotification";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const {
+    showSuccess,
+    showError,
+    showWarning,
+    showConfirmation,
+    NotificationComponent,
+  } = useNotification();
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     nama: "",
@@ -59,13 +67,13 @@ export default function ProfilePage() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        alert("File harus berupa gambar!");
+        showWarning("File harus berupa gambar!");
         return;
       }
 
       // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran file maksimal 2MB!");
+        showWarning("Ukuran file maksimal 2MB!");
         return;
       }
 
@@ -83,14 +91,18 @@ export default function ProfilePage() {
   };
 
   const handleDeletePhoto = () => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus foto profil?")) {
-      setProfilePicture(null);
-    }
+    showConfirmation({
+      title: "Hapus Foto Profil",
+      message: "Apakah Anda yakin ingin menghapus foto profil?",
+      onConfirm: () => {
+        setProfilePicture(null);
+      },
+    });
   };
 
   const handleSave = async () => {
     if (!user || !user.id) {
-      alert("User tidak ditemukan. Silakan login kembali.");
+      showError("User tidak ditemukan. Silakan login kembali.");
       return;
     }
 
@@ -151,10 +163,10 @@ export default function ProfilePage() {
       // Clear password field
       setFormData((prev) => ({ ...prev, passwordBaru: "" }));
 
-      alert("Profil berhasil diperbarui!");
+      showSuccess("Profil berhasil diperbarui!");
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Gagal memperbarui profil: " + error.message);
+      showError("Gagal memperbarui profil: " + error.message);
     } finally {
       setIsSaving(false);
     }
@@ -425,6 +437,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <NotificationComponent />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
+import { useNotification } from "../hooks/useNotification";
 import { dashboardSvgPaths, karyawanSvgPaths } from "../assets/svg-paths";
 import imgLogo from "figma:asset/91293b9b3a4aed9fdd1e62c0fc9c74efae4bcd9b.png";
 
@@ -143,6 +144,7 @@ const ManagerSidebar = () => {
 
 export default function TambahKaryawan() {
   const navigate = useNavigate();
+  const { showSuccess, showWarning, NotificationComponent } = useNotification();
   const [formData, setFormData] = useState({
     namaKasir: "",
     username: "",
@@ -164,7 +166,7 @@ export default function TambahKaryawan() {
 
   const handleSubmit = () => {
     if (formData.password !== formData.konfirmasiPassword) {
-      alert("Password dan konfirmasi password tidak cocok!");
+      showWarning("Password dan konfirmasi password tidak cocok!");
       return;
     }
 
@@ -174,11 +176,11 @@ export default function TambahKaryawan() {
       !formData.email ||
       !formData.password
     ) {
-      alert("Mohon lengkapi semua field yang wajib diisi");
+      showWarning("Mohon lengkapi semua field yang wajib diisi");
       return;
     }
 
-    alert("Karyawan berhasil ditambahkan!");
+    showSuccess("Karyawan berhasil ditambahkan!");
     console.log("Data karyawan:", formData);
     // Reset form
     setFormData({
@@ -304,6 +306,8 @@ export default function TambahKaryawan() {
           </div>
         </div>
       </div>
+
+      <NotificationComponent />
     </div>
   );
 }
